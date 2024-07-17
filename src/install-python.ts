@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as os from 'os'; // Ensure os module is imported
 import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
 import * as exec from '@actions/exec';
@@ -98,8 +99,17 @@ export async function installCpythonFromRelease(release: tc.IToolRelease) {
   core.info(`Download from "${downloadUrl}"`);
   let pythonPath = '';
   try {
-    pythonPath = await tc.downloadTool(downloadUrl, undefined, AUTH);
-    core.info('Extract downloaded archive');
+    // Windows requires that we keep the extension (.zip) for extraction
+    const isWindows = os.platform() === 'win32';
+    const tempDir = process.env.RUNNER_TEMP || '.';
+    const fileName = isWindows
+      ? path.join(tempDir, path.basename(downloadUrl))
+      : undefined;
+
+    pythonPath = await tc.downloadTool(downloadUrl, fileName, AUTH);
+
+    // pythonPath = await tc.downloadTool(downloadUrl, undefined, AUTH);
+    core.info('Extract downloaded archive test');
     let pythonExtractedFolder;
     if (IS_WINDOWS) {
       pythonExtractedFolder = await tc.extractZip(pythonPath);

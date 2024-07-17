@@ -6796,16 +6796,18 @@ exports.create = create;
  * Computes the sha256 hash of a glob
  *
  * @param patterns  Patterns separated by newlines
+ * @param currentWorkspace  Workspace used when matching files
  * @param options   Glob options
+ * @param verbose   Enables verbose logging
  */
-function hashFiles(patterns, options) {
+function hashFiles(patterns, currentWorkspace = '', options, verbose = false) {
     return __awaiter(this, void 0, void 0, function* () {
         let followSymbolicLinks = true;
         if (options && typeof options.followSymbolicLinks === 'boolean') {
             followSymbolicLinks = options.followSymbolicLinks;
         }
         const globber = yield create(patterns, { followSymbolicLinks });
-        return internal_hash_files_1.hashFiles(globber);
+        return internal_hash_files_1.hashFiles(globber, currentWorkspace, verbose);
     });
 }
 exports.hashFiles = hashFiles;
@@ -7165,24 +7167,27 @@ const fs = __importStar(__nccwpck_require__(7147));
 const stream = __importStar(__nccwpck_require__(2781));
 const util = __importStar(__nccwpck_require__(3837));
 const path = __importStar(__nccwpck_require__(1017));
-function hashFiles(globber) {
+function hashFiles(globber, currentWorkspace, verbose = false) {
     var e_1, _a;
     var _b;
     return __awaiter(this, void 0, void 0, function* () {
+        const writeDelegate = verbose ? core.info : core.debug;
         let hasMatch = false;
-        const githubWorkspace = (_b = process.env['GITHUB_WORKSPACE']) !== null && _b !== void 0 ? _b : process.cwd();
+        const githubWorkspace = currentWorkspace
+            ? currentWorkspace
+            : (_b = process.env['GITHUB_WORKSPACE']) !== null && _b !== void 0 ? _b : process.cwd();
         const result = crypto.createHash('sha256');
         let count = 0;
         try {
             for (var _c = __asyncValues(globber.globGenerator()), _d; _d = yield _c.next(), !_d.done;) {
                 const file = _d.value;
-                core.debug(file);
+                writeDelegate(file);
                 if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
-                    core.debug(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`);
+                    writeDelegate(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`);
                     continue;
                 }
                 if (fs.statSync(file).isDirectory()) {
-                    core.debug(`Skip directory '${file}'.`);
+                    writeDelegate(`Skip directory '${file}'.`);
                     continue;
                 }
                 const hash = crypto.createHash('sha256');
@@ -7204,11 +7209,11 @@ function hashFiles(globber) {
         }
         result.end();
         if (hasMatch) {
-            core.debug(`Found ${count} files to hash.`);
+            writeDelegate(`Found ${count} files to hash.`);
             return result.digest('hex');
         }
         else {
-            core.debug(`No matches found for glob`);
+            writeDelegate(`No matches found for glob`);
             return '';
         }
     });
@@ -91600,6 +91605,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.installCpythonFromRelease = exports.getManifestFromURL = exports.getManifestFromRepo = exports.getManifest = exports.findReleaseFromManifest = exports.MANIFEST_URL = void 0;
 const path = __importStar(__nccwpck_require__(1017));
+const os = __importStar(__nccwpck_require__(2037)); // Ensure os module is imported
 const core = __importStar(__nccwpck_require__(2186));
 const tc = __importStar(__nccwpck_require__(7784));
 const exec = __importStar(__nccwpck_require__(1514));
@@ -91682,8 +91688,15 @@ function installCpythonFromRelease(release) {
         core.info(`Download from "${downloadUrl}"`);
         let pythonPath = '';
         try {
-            pythonPath = yield tc.downloadTool(downloadUrl, undefined, AUTH);
-            core.info('Extract downloaded archive');
+            // Windows requires that we keep the extension (.zip) for extraction
+            const isWindows = os.platform() === 'win32';
+            const tempDir = process.env.RUNNER_TEMP || '.';
+            const fileName = isWindows
+                ? path.join(tempDir, path.basename(downloadUrl))
+                : undefined;
+            pythonPath = yield tc.downloadTool(downloadUrl, fileName, AUTH);
+            // pythonPath = await tc.downloadTool(downloadUrl, undefined, AUTH);
+            core.info('Extract downloaded archive test');
             let pythonExtractedFolder;
             if (utils_1.IS_WINDOWS) {
                 pythonExtractedFolder = yield tc.extractZip(pythonPath);
