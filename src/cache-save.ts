@@ -83,4 +83,4 @@ function isCacheDirectoryExists(cacheDirectory: string[]) {
   return result;
 }
 
-run(true);
+run();
