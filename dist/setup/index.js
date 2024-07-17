@@ -91688,13 +91688,14 @@ function installCpythonFromRelease(release) {
         let pythonPath = '';
         try {
             // Windows requires that we keep the extension (.zip) for extraction
-            const tempDir = process.env.RUNNER_TEMP || '.';
+            const tempDir = process.env['RUNNER_TEMP'] || '.';
+            core.info(tempDir);
             const fileName = utils_1.IS_WINDOWS
                 ? path.join(tempDir, path.basename(downloadUrl))
                 : undefined;
             pythonPath = yield tc.downloadTool(downloadUrl, fileName, AUTH);
             // pythonPath = await tc.downloadTool(downloadUrl, undefined, AUTH);
-            core.info('Extract downloaded archive win test');
+            core.info('Extract downloaded archive');
             let pythonExtractedFolder;
             if (utils_1.IS_WINDOWS) {
                 pythonExtractedFolder = yield tc.extractZip(pythonPath);
