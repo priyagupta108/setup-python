@@ -100,16 +100,14 @@ export async function installCpythonFromRelease(release: tc.IToolRelease) {
   let pythonPath = '';
   try {
     // Windows requires that we keep the extension (.zip) for extraction
-    const isWindows = os.platform() === 'win32';
     const tempDir = process.env.RUNNER_TEMP || '.';
-    const fileName = isWindows
+    const fileName = IS_WINDOWS
       ? path.join(tempDir, path.basename(downloadUrl))
       : undefined;
-
     pythonPath = await tc.downloadTool(downloadUrl, fileName, AUTH);
 
     // pythonPath = await tc.downloadTool(downloadUrl, undefined, AUTH);
-    core.info('Extract downloaded archive test');
+    core.info('Extract downloaded archive win test');
     let pythonExtractedFolder;
     if (IS_WINDOWS) {
       pythonExtractedFolder = await tc.extractZip(pythonPath);

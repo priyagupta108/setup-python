@@ -91605,7 +91605,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.installCpythonFromRelease = exports.getManifestFromURL = exports.getManifestFromRepo = exports.getManifest = exports.findReleaseFromManifest = exports.MANIFEST_URL = void 0;
 const path = __importStar(__nccwpck_require__(1017));
-const os = __importStar(__nccwpck_require__(2037)); // Ensure os module is imported
 const core = __importStar(__nccwpck_require__(2186));
 const tc = __importStar(__nccwpck_require__(7784));
 const exec = __importStar(__nccwpck_require__(1514));
@@ -91689,14 +91688,13 @@ function installCpythonFromRelease(release) {
         let pythonPath = '';
         try {
             // Windows requires that we keep the extension (.zip) for extraction
-            const isWindows = os.platform() === 'win32';
             const tempDir = process.env.RUNNER_TEMP || '.';
-            const fileName = isWindows
+            const fileName = utils_1.IS_WINDOWS
                 ? path.join(tempDir, path.basename(downloadUrl))
                 : undefined;
             pythonPath = yield tc.downloadTool(downloadUrl, fileName, AUTH);
             // pythonPath = await tc.downloadTool(downloadUrl, undefined, AUTH);
-            core.info('Extract downloaded archive test');
+            core.info('Extract downloaded archive win test');
             let pythonExtractedFolder;
             if (utils_1.IS_WINDOWS) {
                 pythonExtractedFolder = yield tc.extractZip(pythonPath);
