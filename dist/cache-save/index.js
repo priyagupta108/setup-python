@@ -81199,7 +81199,7 @@ function isCacheDirectoryExists(cacheDirectory) {
     }, false);
     return result;
 }
-run();
+run(true);
 
 
 /***/ }),
