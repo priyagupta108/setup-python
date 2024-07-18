@@ -91426,14 +91426,13 @@ function installPyPy(pypyVersion, pythonVersion, architecture, allowPreReleases,
         core.info(`Downloading PyPy from "${downloadUrl}" ...`);
         try {
             const fileName = (0, utils_1.getFileName)(downloadUrl);
-            const pypyPath = yield tc.downloadTool(downloadUrl, fileName);
-            core.info(pypyPath);
-            core.info('Extracting downloaded archive...test');
+            const pypyPath = yield tc.downloadTool(downloadUrl);
+            core.info('Extracting downloaded archive...');
             if (utils_1.IS_WINDOWS) {
-                downloadDir = yield tc.extractZip(pypyPath);
+                downloadDir = yield tc.extractZip(pypyPath, fileName);
             }
             else {
-                downloadDir = yield tc.extractTar(pypyPath, 'x');
+                downloadDir = yield tc.extractTar(pypyPath, undefined, 'x');
             }
             // root folder in archive can have unpredictable name so just take the first folder
             // downloadDir is unique folder under TEMP and can't contain any other folders

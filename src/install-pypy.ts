@@ -71,16 +71,13 @@ export async function installPyPy(
 
   try {
     const fileName = getFileName(downloadUrl);
+    const pypyPath = await tc.downloadTool(downloadUrl);
 
-    const pypyPath = await tc.downloadTool(downloadUrl, fileName);
-
-    core.info(pypyPath);
-
-    core.info('Extracting downloaded archive...test');
+    core.info('Extracting downloaded archive...');
     if (IS_WINDOWS) {
-      downloadDir = await tc.extractZip(pypyPath);
+      downloadDir = await tc.extractZip(pypyPath, fileName);
     } else {
-      downloadDir = await tc.extractTar(pypyPath, 'x');
+      downloadDir = await tc.extractTar(pypyPath, undefined, 'x');
     }
 
     // root folder in archive can have unpredictable name so just take the first folder
