@@ -14,7 +14,8 @@ import {
   createSymlinkInFolder,
   isNightlyKeyword,
   writeExactPyPyVersionFile,
-  getBinaryDirectory
+  getBinaryDirectory,
+  getFileName
 } from './utils';
 
 export async function installPyPy(
@@ -69,13 +70,17 @@ export async function installPyPy(
   core.info(`Downloading PyPy from "${downloadUrl}" ...`);
 
   try {
-    const pypyPath = await tc.downloadTool(downloadUrl);
+    const fileName = getFileName(downloadUrl);
 
-    core.info('Extracting downloaded archive...');
+    const pypyPath = await tc.downloadTool(downloadUrl, fileName);
+
+    core.info(pypyPath);
+
+    core.info('Extracting downloaded archive...test');
     if (IS_WINDOWS) {
       downloadDir = await tc.extractZip(pypyPath);
     } else {
-      downloadDir = await tc.extractTar(pypyPath, undefined, 'x');
+      downloadDir = await tc.extractTar(pypyPath, 'x');
     }
 
     // root folder in archive can have unpredictable name so just take the first folder

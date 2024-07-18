@@ -310,3 +310,11 @@ export function getNextPageUrl<T>(response: ifm.TypedResponse<T>) {
   }
   return null;
 }
+
+// Windows requires that we keep the extension (.zip) for extraction
+export function getFileName(downloadUrl: string) {
+  const tempDir = process.env.RUNNER_TEMP || '.';
+  return IS_WINDOWS
+    ? path.join(tempDir, path.basename(downloadUrl))
+    : undefined;
+}
