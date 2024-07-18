@@ -71,11 +71,14 @@ export async function installPyPy(
 
   try {
     const fileName = getFileName(downloadUrl);
-    const pypyPath = await tc.downloadTool(downloadUrl);
+    // const pypyPath = await tc.downloadTool(downloadUrl);
+    const pypyPath = IS_WINDOWS
+      ? await tc.downloadTool(downloadUrl, fileName, 'x')
+      : await tc.downloadTool(downloadUrl);
 
-    core.info('Extracting downloaded archive...');
+    core.info('Extracting downloaded archive...test');
     if (IS_WINDOWS) {
-      downloadDir = await tc.extractZip(pypyPath, fileName);
+      downloadDir = await tc.extractZip(pypyPath);
     } else {
       downloadDir = await tc.extractTar(pypyPath, undefined, 'x');
     }

@@ -91426,10 +91426,13 @@ function installPyPy(pypyVersion, pythonVersion, architecture, allowPreReleases,
         core.info(`Downloading PyPy from "${downloadUrl}" ...`);
         try {
             const fileName = (0, utils_1.getFileName)(downloadUrl);
-            const pypyPath = yield tc.downloadTool(downloadUrl);
-            core.info('Extracting downloaded archive...');
+            // const pypyPath = await tc.downloadTool(downloadUrl);
+            const pypyPath = utils_1.IS_WINDOWS
+                ? yield tc.downloadTool(downloadUrl, fileName, 'x')
+                : yield tc.downloadTool(downloadUrl);
+            core.info('Extracting downloaded archive...test');
             if (utils_1.IS_WINDOWS) {
-                downloadDir = yield tc.extractZip(pypyPath, fileName);
+                downloadDir = yield tc.extractZip(pypyPath);
             }
             else {
                 downloadDir = yield tc.extractTar(pypyPath, undefined, 'x');
