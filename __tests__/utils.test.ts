@@ -163,11 +163,11 @@ describe('getNextPageUrl', () => {
 });
 
 describe('getDownloadFileName', () => {
-  const originalEnv = process.env
+  const originalEnv = process.env;
   const tempDir = path.join(__dirname, 'runner', 'temp');
-  
+
   beforeEach(() => {
-    process.env = { ...originalEnv };
+    process.env = {...originalEnv};
   });
 
   afterEach(() => {
@@ -178,7 +178,10 @@ describe('getDownloadFileName', () => {
     if (IS_WINDOWS) {
       process.env['RUNNER_TEMP'] = tempDir;
       const downloadUrl = 'https://example.com/file.zip';
-      const expectedPath = path.join(process.env.RUNNER_TEMP, path.basename(downloadUrl));
+      const expectedPath = path.join(
+        process.env.RUNNER_TEMP,
+        path.basename(downloadUrl)
+      );
       expect(getDownloadFileName(downloadUrl)).toBe(expectedPath);
     }
   });
