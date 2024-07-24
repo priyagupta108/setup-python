@@ -15,7 +15,7 @@ import {
   isNightlyKeyword,
   writeExactPyPyVersionFile,
   getBinaryDirectory,
-  getFileName
+  getDownloadFileName
 } from './utils';
 
 export async function installPyPy(
@@ -70,13 +70,10 @@ export async function installPyPy(
   core.info(`Downloading PyPy from "${downloadUrl}" ...`);
 
   try {
-    const fileName = getFileName(downloadUrl);
-    // const pypyPath = await tc.downloadTool(downloadUrl);
-    const pypyPath = IS_WINDOWS
-      ? await tc.downloadTool(downloadUrl, fileName, 'x')
-      : await tc.downloadTool(downloadUrl);
+    const fileName = getDownloadFileName(downloadUrl);
+    const pypyPath = await tc.downloadTool(downloadUrl, fileName);
 
-    core.info('Extracting downloaded archive...test');
+    core.info('Extracting downloaded archive...');
     if (IS_WINDOWS) {
       downloadDir = await tc.extractZip(pypyPath);
     } else {
