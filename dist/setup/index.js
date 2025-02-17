@@ -10554,7 +10554,7 @@ class HttpClient {
         }
         const usingSsl = parsedUrl.protocol === 'https:';
         proxyAgent = new undici_1.ProxyAgent(Object.assign({ uri: proxyUrl.href, pipelining: !this._keepAlive ? 0 : 1 }, ((proxyUrl.username || proxyUrl.password) && {
-            token: `Basic ${Buffer.from(`${proxyUrl.username}:${proxyUrl.password}`).toString('base64')}`
+            token: `${proxyUrl.username}:${proxyUrl.password}`
         })));
         this._proxyAgentDispatcher = proxyAgent;
         if (usingSsl && this._ignoreSslError) {
@@ -10668,11 +10668,11 @@ function getProxyUrl(reqUrl) {
     })();
     if (proxyVar) {
         try {
-            return new DecodedURL(proxyVar);
+            return new URL(proxyVar);
         }
         catch (_a) {
             if (!proxyVar.startsWith('http://') && !proxyVar.startsWith('https://'))
-                return new DecodedURL(`http://${proxyVar}`);
+                return new URL(`http://${proxyVar}`);
         }
     }
     else {
@@ -10730,19 +10730,6 @@ function isLoopbackAddress(host) {
         hostLower.startsWith('127.') ||
         hostLower.startsWith('[::1]') ||
         hostLower.startsWith('[0:0:0:0:0:0:0:1]'));
-}
-class DecodedURL extends URL {
-    constructor(url, base) {
-        super(url, base);
-        this._decodedUsername = decodeURIComponent(super.username);
-        this._decodedPassword = decodeURIComponent(super.password);
-    }
-    get username() {
-        return this._decodedUsername;
-    }
-    get password() {
-        return this._decodedPassword;
-    }
 }
 //# sourceMappingURL=proxy.js.map
 
@@ -98912,6 +98899,20 @@ class PipCache extends cache_distributor_1.default {
                     exitCode: exitCode
                 } = yield exec.getExecOutput('pip cache dir'));
             }
+            let response;
+            if (utils_1.IS_WINDOWS) {
+                const execPromisify = util_1.default.promisify(child_process.exec);
+                response = yield execPromisify('pip cache dir');
+            }
+            else {
+                response = yield exec.getExecOutput('pip cache dir');
+            }
+            // Use core.debug to log the whole response
+            core.debug(`response: ${JSON.stringify(response)}`);
+            // Use core.debug to log the output
+            core.debug(`stdout: ${stdout}`);
+            core.debug(`stderr: ${stderr}`);
+            core.debug(`exitCode: ${exitCode}`);
             if (exitCode && stderr) {
                 throw new Error(`Could not get cache folder path for pip package manager`);
             }

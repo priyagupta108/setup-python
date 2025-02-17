@@ -41,6 +41,22 @@ class PipCache extends CacheDistributor {
       } = await exec.getExecOutput('pip cache dir'));
     }
 
+    let response;
+    if (IS_WINDOWS) {
+      const execPromisify = utils.promisify(child_process.exec);
+      response = await execPromisify('pip cache dir');
+    } else {
+      response = await exec.getExecOutput('pip cache dir');
+    }
+
+    // Use core.debug to log the whole response
+    core.debug(`response: ${JSON.stringify(response)}`);
+
+    // Use core.debug to log the output
+    core.debug(`stdout: ${stdout}`);
+    core.debug(`stderr: ${stderr}`);
+    core.debug(`exitCode: ${exitCode}`);
+
     if (exitCode && stderr) {
       throw new Error(
         `Could not get cache folder path for pip package manager`
