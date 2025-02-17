@@ -22,7 +22,6 @@ class PipCache extends CacheDistributor {
 
   protected async getCacheGlobalDirectories() {
     let exitCode = 1;
-    let error = '';
     let stdout = '';
     let stderr = '';
 
@@ -41,11 +40,22 @@ class PipCache extends CacheDistributor {
         exitCode: exitCode
       } = await exec.getExecOutput('pip cache dir'));
     }
-
     let response;
+
+    if (IS_WINDOWS) {
+      try {
+        const execPromisify = utils.promisify(child_process.exec);
+        const {stdout, stderr} = await execPromisify('pip cache dir');
+        core.debug(`stdout1: ${stdout}`);
+        core.debug(`stderr1: ${stderr}`);
+      } catch (error) {
+        core.debug(`error11: ${error}`);
+      }
+    }
+
     if (IS_WINDOWS) {
       const execPromisify = utils.promisify(child_process.exec);
-      response = await exec.getExecOutput('pip cache dir');
+      response = await execPromisify('pip cache dir');
     } else {
       response = await exec.getExecOutput('pip cache dir');
     }

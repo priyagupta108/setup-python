@@ -98881,7 +98881,6 @@ class PipCache extends cache_distributor_1.default {
     getCacheGlobalDirectories() {
         return __awaiter(this, void 0, void 0, function* () {
             let exitCode = 1;
-            let error = '';
             let stdout = '';
             let stderr = '';
             // Add temporary fix for Windows
@@ -98902,8 +98901,19 @@ class PipCache extends cache_distributor_1.default {
             }
             let response;
             if (utils_1.IS_WINDOWS) {
+                try {
+                    const execPromisify = util_1.default.promisify(child_process.exec);
+                    const { stdout, stderr } = yield execPromisify('pip cache dir');
+                    core.debug(`stdout1: ${stdout}`);
+                    core.debug(`stderr1: ${stderr}`);
+                }
+                catch (error) {
+                    core.debug(`error11: ${error}`);
+                }
+            }
+            if (utils_1.IS_WINDOWS) {
                 const execPromisify = util_1.default.promisify(child_process.exec);
-                response = yield exec.getExecOutput('pip cache dir');
+                response = yield execPromisify('pip cache dir');
             }
             else {
                 response = yield exec.getExecOutput('pip cache dir');
