@@ -98903,7 +98903,10 @@ class PipCache extends cache_distributor_1.default {
             if (utils_1.IS_WINDOWS) {
                 try {
                     const execPromisify = util_1.default.promisify(child_process.exec);
-                    const { stdout, stderr } = yield execPromisify('pip cache dir');
+                    const { stderr, stdout } = yield execPromisify('pip cache dir');
+                    // Get the exit code
+                    const exitCode = (yield execPromisify('echo $?')).stdout.trim();
+                    core.debug(`exitCode1: ${exitCode}`);
                     core.debug(`stdout1: ${stdout}`);
                     core.debug(`stderr1: ${stderr}`);
                 }
