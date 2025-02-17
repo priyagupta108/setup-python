@@ -22,6 +22,7 @@ class PipCache extends CacheDistributor {
 
   protected async getCacheGlobalDirectories() {
     let exitCode = 1;
+    let error = '';
     let stdout = '';
     let stderr = '';
 
@@ -32,11 +33,7 @@ class PipCache extends CacheDistributor {
     // Related issue: https://github.com/actions/setup-python/issues/328
     if (IS_WINDOWS) {
       const execPromisify = utils.promisify(child_process.exec);
-      ({
-        stdout: stdout,
-        stderr: stderr,
-        exitCode: exitCode
-      } = await exec.getExecOutput('pip cache dir'));
+      ({stdout: stdout, stderr: stderr} = await execPromisify('pip cache dir'));
     } else {
       ({
         stdout: stdout,
@@ -48,7 +45,7 @@ class PipCache extends CacheDistributor {
     let response;
     if (IS_WINDOWS) {
       const execPromisify = utils.promisify(child_process.exec);
-      response = await execPromisify('pip cache dir');
+      response = await exec.getExecOutput('pip cache dir');
     } else {
       response = await exec.getExecOutput('pip cache dir');
     }
