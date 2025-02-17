@@ -98890,7 +98890,11 @@ class PipCache extends cache_distributor_1.default {
             // Related issue: https://github.com/actions/setup-python/issues/328
             if (utils_1.IS_WINDOWS) {
                 const execPromisify = util_1.default.promisify(child_process.exec);
-                ({ stdout: stdout, stderr: stderr } = yield execPromisify('pip cache dir'));
+                ({
+                    stdout: stdout,
+                    stderr: stderr,
+                    exitCode: exitCode
+                } = yield exec.getExecOutput('pip cache dir'));
             }
             else {
                 ({

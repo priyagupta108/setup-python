@@ -32,7 +32,11 @@ class PipCache extends CacheDistributor {
     // Related issue: https://github.com/actions/setup-python/issues/328
     if (IS_WINDOWS) {
       const execPromisify = utils.promisify(child_process.exec);
-      ({stdout: stdout, stderr: stderr} = await execPromisify('pip cache dir'));
+      ({
+        stdout: stdout,
+        stderr: stderr,
+        exitCode: exitCode
+      } = await exec.getExecOutput('pip cache dir'));
     } else {
       ({
         stdout: stdout,
