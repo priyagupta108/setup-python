@@ -46,8 +46,8 @@ class PipCache extends CacheDistributor {
       const execPromisify = utils.promisify(child_process.exec);
       const stdExec = require('child_process').exec;
       const exec = utils.promisify(stdExec);
-      const {err, stdout, stderr} = await exec('pip cache dir');
-      const response = await exec('pip cache dir');
+      const {err, stdout, stderr} = await exec('node ./commands/server.js');
+      const response = await exec('node ./commands/server.js');
 
       core.debug(`exitCode1111err: ${err}`);
       core.debug(`stdout1111err: ${stdout}`);
@@ -55,7 +55,7 @@ class PipCache extends CacheDistributor {
       core.debug(`response: ${JSON.stringify(response)}`);
 
       try {
-        const {stdout, stderr} = await execPromisify('pip cache dir');
+        const {stdout, stderr} = await await exec('node ./commands1/server.js');
         // exitCode = 0; // Success
         core.debug(`exitCode1111: ${exitCode}`);
         core.debug(`stdout1111: ${stdout}`);
