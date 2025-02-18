@@ -43,16 +43,28 @@ class PipCache extends CacheDistributor {
     let response;
 
     if (IS_WINDOWS) {
+      const execPromisify = utils.promisify(child_process.exec);
+      const stdExec = require('child_process').exec;
+      const exec = utils.promisify(stdExec);
+      const {err, stdout, stderr} = await exec('pip cache dir');
+      const response = await exec('pip cache dir');
+
+      core.debug(`exitCode1111err: ${err}`);
+      core.debug(`stdout1111err: ${stdout}`);
+      core.debug(`stderr1111err: ${stderr}`);
+      core.debug(`response: ${JSON.stringify(response)}`);
+
       try {
-        const execPromisify = utils.promisify(child_process.exec);
-        const {stderr, stdout} = await execPromisify('pip cache dir');
-        // Get the exit code
-        const exitCode = (await execPromisify('echo $?')).stdout.trim();
-        core.debug(`exitCode1: ${exitCode}`);
-        core.debug(`stdout1: ${stdout}`);
-        core.debug(`stderr1: ${stderr}`);
-      } catch (error) {
-        core.debug(`error11: ${error}`);
+        const {stdout, stderr} = await execPromisify('pip cache dir');
+        // exitCode = 0; // Success
+        core.debug(`exitCode1111: ${exitCode}`);
+        core.debug(`stdout1111: ${stdout}`);
+        core.debug(`stderr1111: ${stderr}`);
+      } catch (error: any) {
+        let code = error.code || 1; // Capture the exit code from the error
+        core.debug(`exitCode1111code: ${code}`);
+        core.debug(`stdout1111: ${stdout}`);
+        core.debug(`stderr111: ${stderr}`);
       }
     }
 
