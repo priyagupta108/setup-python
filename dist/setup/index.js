@@ -98902,30 +98902,6 @@ class PipCache extends cache_distributor_1.default {
             let response;
             if (utils_1.IS_WINDOWS) {
                 const execPromisify = util_1.default.promisify(child_process.exec);
-                const stdExec = (__nccwpck_require__(2081).exec);
-                const exec = util_1.default.promisify(stdExec);
-                const { err, stdout, stderr } = yield exec('node ./commands/server.js');
-                const response = yield exec('node ./commands/server.js');
-                core.debug(`exitCode1111err: ${err}`);
-                core.debug(`stdout1111err: ${stdout}`);
-                core.debug(`stderr1111err: ${stderr}`);
-                core.debug(`response: ${JSON.stringify(response)}`);
-                try {
-                    const { stdout, stderr } = yield yield exec('node ./commands1/server.js');
-                    // exitCode = 0; // Success
-                    core.debug(`exitCode1111: ${exitCode}`);
-                    core.debug(`stdout1111: ${stdout}`);
-                    core.debug(`stderr1111: ${stderr}`);
-                }
-                catch (error) {
-                    let code = error.code || 1; // Capture the exit code from the error
-                    core.debug(`exitCode1111code: ${code}`);
-                    core.debug(`stdout1111: ${stdout}`);
-                    core.debug(`stderr111: ${stderr}`);
-                }
-            }
-            if (utils_1.IS_WINDOWS) {
-                const execPromisify = util_1.default.promisify(child_process.exec);
                 response = yield execPromisify('pip cache dir');
             }
             else {
