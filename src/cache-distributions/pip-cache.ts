@@ -21,7 +21,7 @@ class PipCache extends CacheDistributor {
   }
 
   protected async getCacheGlobalDirectories() {
-    let exitCode = 1;
+    let exitCode = 0;
     let stdout = '';
     let stderr = '';
 
@@ -31,30 +31,36 @@ class PipCache extends CacheDistributor {
     // or spawn must be started with the shell option enabled for getExecOutput
     // Related issue: https://github.com/actions/setup-python/issues/328
     if (IS_WINDOWS) {
-      const execPromisify = utils.promisify(child_process.exec);
-      ({stdout: stdout, stderr: stderr} = await execPromisify('pip cache dir'));
+      try {
+        const execPromisify = utils.promisify(child_process.exec);
+        ({stdout, stderr} = await execPromisify('pip cache dir'));
+      } catch (error: any) {
+        exitCode = error.code || 1; // Capture the exit code from the error object
+      }
     } else {
-      ({
-        stdout: stdout,
-        stderr: stderr,
-        exitCode: exitCode
-      } = await exec.getExecOutput('pip cache dir'));
+      ({stdout, stderr, exitCode} = await exec.getExecOutput('pip cache dir'));
     }
-    let response;
+
     if (IS_WINDOWS) {
-      const execPromisify = utils.promisify(child_process.exec);
-      response = await execPromisify('pip cache dir');
+      try {
+        const execPromisify = utils.promisify(child_process.exec);
+        ({stdout, stderr} = await execPromisify('pip cache dir invaild'));
+        // Use core.debug to log the output
+        core.debug(`stdout: ${stdout}`);
+        core.debug(`stderr: ${stderr}`);
+        core.debug(`exitCode: ${exitCode}`);
+      } catch (error: any) {
+        // Use core.debug to log the output
+        core.debug(`errorerror: ${JSON.stringify(error)}`);
+        core.debug(`stdout: ${stdout}`);
+        core.debug(`stderr: ${stderr}`);
+        core.debug(`exitCode: ${exitCode}`);
+
+        exitCode = error.code || 1; // Capture the exit code from the error object
+      }
     } else {
-      response = await exec.getExecOutput('pip cache dir');
+      ({stdout, stderr, exitCode} = await exec.getExecOutput('pip cache dir'));
     }
-
-    // Use core.debug to log the whole response
-    core.debug(`response: ${JSON.stringify(response)}`);
-
-    // Use core.debug to log the output
-    core.debug(`stdout: ${stdout}`);
-    core.debug(`stderr: ${stderr}`);
-    core.debug(`exitCode: ${exitCode}`);
 
     if (exitCode && stderr) {
       throw new Error(

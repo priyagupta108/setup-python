@@ -98880,7 +98880,7 @@ class PipCache extends cache_distributor_1.default {
     }
     getCacheGlobalDirectories() {
         return __awaiter(this, void 0, void 0, function* () {
-            let exitCode = 1;
+            let exitCode = 0;
             let stdout = '';
             let stderr = '';
             // Add temporary fix for Windows
@@ -98889,30 +98889,38 @@ class PipCache extends cache_distributor_1.default {
             // or spawn must be started with the shell option enabled for getExecOutput
             // Related issue: https://github.com/actions/setup-python/issues/328
             if (utils_1.IS_WINDOWS) {
-                const execPromisify = util_1.default.promisify(child_process.exec);
-                ({ stdout: stdout, stderr: stderr } = yield execPromisify('pip cache dir'));
+                try {
+                    const execPromisify = util_1.default.promisify(child_process.exec);
+                    ({ stdout, stderr } = yield execPromisify('pip cache dir'));
+                }
+                catch (error) {
+                    exitCode = error.code || 1; // Capture the exit code from the error object
+                }
             }
             else {
-                ({
-                    stdout: stdout,
-                    stderr: stderr,
-                    exitCode: exitCode
-                } = yield exec.getExecOutput('pip cache dir'));
+                ({ stdout, stderr, exitCode } = yield exec.getExecOutput('pip cache dir'));
             }
-            let response;
             if (utils_1.IS_WINDOWS) {
-                const execPromisify = util_1.default.promisify(child_process.exec);
-                response = yield execPromisify('pip cache dir');
+                try {
+                    const execPromisify = util_1.default.promisify(child_process.exec);
+                    ({ stdout, stderr } = yield execPromisify('pip cache dir invaild'));
+                    // Use core.debug to log the output
+                    core.debug(`stdout: ${stdout}`);
+                    core.debug(`stderr: ${stderr}`);
+                    core.debug(`exitCode: ${exitCode}`);
+                }
+                catch (error) {
+                    // Use core.debug to log the output
+                    core.debug(`errorerror: ${JSON.stringify(error)}`);
+                    core.debug(`stdout: ${stdout}`);
+                    core.debug(`stderr: ${stderr}`);
+                    core.debug(`exitCode: ${exitCode}`);
+                    exitCode = error.code || 1; // Capture the exit code from the error object
+                }
             }
             else {
-                response = yield exec.getExecOutput('pip cache dir');
+                ({ stdout, stderr, exitCode } = yield exec.getExecOutput('pip cache dir'));
             }
-            // Use core.debug to log the whole response
-            core.debug(`response: ${JSON.stringify(response)}`);
-            // Use core.debug to log the output
-            core.debug(`stdout: ${stdout}`);
-            core.debug(`stderr: ${stderr}`);
-            core.debug(`exitCode: ${exitCode}`);
             if (exitCode && stderr) {
                 throw new Error(`Could not get cache folder path for pip package manager`);
             }
