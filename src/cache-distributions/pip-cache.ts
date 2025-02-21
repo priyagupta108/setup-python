@@ -34,7 +34,14 @@ class PipCache extends CacheDistributor {
       try {
         const execPromisify = utils.promisify(child_process.exec);
         ({stdout, stderr} = await execPromisify('pip cache dir'));
+        core.debug(`stdout: ${stdout}`);
+        core.debug(`stderr: ${stderr}`);
+        core.debug(`exitCode: ${exitCode}`);
       } catch (error: any) {
+        core.debug(`errorerror: ${JSON.stringify(error)}`);
+        core.debug(`stdout: ${stdout}`);
+        core.debug(`stderr: ${stderr}`);
+        core.debug(`exitCode: ${exitCode}`);
         exitCode = error.code || 1; // Capture the exit code from the error object
       }
     } else {
