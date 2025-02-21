@@ -98908,6 +98908,9 @@ class PipCache extends cache_distributor_1.default {
                 ({ stdout, stderr, exitCode } = yield exec.getExecOutput('pip cache dir'));
             }
             if (utils_1.IS_WINDOWS) {
+                let exitCode = 0;
+                let stdout = '';
+                let stderr = '';
                 try {
                     const execPromisify = util_1.default.promisify(child_process.exec);
                     ({ stdout, stderr } = yield execPromisify('pip cache dir invaild'));
@@ -98924,9 +98927,6 @@ class PipCache extends cache_distributor_1.default {
                     core.debug(`exitCode: ${exitCode}`);
                     exitCode = error.code || 1; // Capture the exit code from the error object
                 }
-            }
-            else {
-                ({ stdout, stderr, exitCode } = yield exec.getExecOutput('pip cache dir'));
             }
             if (exitCode && stderr) {
                 throw new Error(`Could not get cache folder path for pip package manager`);
