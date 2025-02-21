@@ -98889,23 +98889,15 @@ class PipCache extends cache_distributor_1.default {
             // or spawn must be started with the shell option enabled for getExecOutput
             // Related issue: https://github.com/actions/setup-python/issues/328
             if (utils_1.IS_WINDOWS) {
-                try {
-                    const execPromisify = util_1.default.promisify(child_process.exec);
-                    ({ stdout, stderr } = yield execPromisify('pip cache dir'));
-                    core.debug(`stdout: ${stdout}`);
-                    core.debug(`stderr: ${stderr}`);
-                    core.debug(`exitCode: ${exitCode}`);
-                }
-                catch (error) {
-                    core.debug(`errorerror: ${JSON.stringify(error)}`);
-                    core.debug(`stdout: ${stdout}`);
-                    core.debug(`stderr: ${stderr}`);
-                    core.debug(`exitCode: ${exitCode}`);
-                    exitCode = error.code || 1; // Capture the exit code from the error object
-                }
+                const execPromisify = util_1.default.promisify(child_process.exec);
+                ({ stdout: stdout, stderr: stderr } = yield execPromisify('pip cache dir'));
             }
             else {
-                ({ stdout, stderr, exitCode } = yield exec.getExecOutput('pip cache dir'));
+                ({
+                    stdout: stdout,
+                    stderr: stderr,
+                    exitCode: exitCode
+                } = yield exec.getExecOutput('pip cache dir'));
             }
             if (utils_1.IS_WINDOWS) {
                 let exitCode = 0;
