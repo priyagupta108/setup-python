@@ -21,7 +21,7 @@ class PipCache extends CacheDistributor {
   }
 
   protected async getCacheGlobalDirectories() {
-    let exitCode = 1;
+    let exitCode = 0;
     let stdout = '';
     let stderr = '';
 
@@ -32,14 +32,19 @@ class PipCache extends CacheDistributor {
     // Related issue: https://github.com/actions/setup-python/issues/328
     if (IS_WINDOWS) {
       const execPromisify = utils.promisify(child_process.exec);
-      ({stdout: stdout, stderr: stderr} = await execPromisify('pip cache dir'));
+      try {
+        ({stdout, stderr} = await execPromisify('pip cache dir'));
+        exitCode = 0;
+      } catch (error: any) {
+        exitCode = 1;
+      }
     } else {
-      ({
-        stdout: stdout,
-        stderr: stderr,
-        exitCode: exitCode
-      } = await exec.getExecOutput('pip cache dir'));
+      ({stdout, stderr, exitCode} = await exec.getExecOutput('pip cache dir'));
     }
+
+    core.debug(`stdout value pip: ${stdout}`);
+    core.debug(`stderr value pip: ${stderr}`);
+    core.debug(`exitCode value pip: ${exitCode}`);
 
     if (IS_WINDOWS) {
       let exitCode = 0;
@@ -47,7 +52,7 @@ class PipCache extends CacheDistributor {
       let stderr = '';
       try {
         const execPromisify = utils.promisify(child_process.exec);
-        ({stdout, stderr} = await execPromisify('pip cache dir invaild'));
+        ({stdout, stderr} = await execPromisify('invaild command'));
         // Use core.debug to log the output
         core.debug(`stdout test: ${stdout}`);
         core.debug(`stderr test: ${stderr}`);
@@ -55,14 +60,14 @@ class PipCache extends CacheDistributor {
       } catch (error: any) {
         // Use core.debug to log the output
         core.debug(`errorerror test: ${JSON.stringify(error)}`);
-        exitCode = error.code || 1; // Capture the exit code from the error object
+        exitCode = error.code; // Capture the exit code from the error object
         core.debug(`stdout test: ${stdout}`);
         core.debug(`stderr test: ${stderr}`);
         core.debug(`exitCode test: ${exitCode}`);
       }
     }
 
-    if (stderr) {
+    if (exitCode && stderr) {
       throw new Error(
         `Could not get cache folder path for pip package manager`
       );
