@@ -62,7 +62,7 @@ class PipCache extends CacheDistributor {
       }
     }
 
-    if (exitCode && stderr) {
+    if (exitCode !== 0 && stderr) {
       throw new Error(
         `Could not get cache folder path for pip package manager`
       );

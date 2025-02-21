@@ -98920,7 +98920,7 @@ class PipCache extends cache_distributor_1.default {
                     core.debug(`exitCode test: ${exitCode}`);
                 }
             }
-            if (exitCode && stderr) {
+            if (exitCode !== 0 && stderr) {
                 throw new Error(`Could not get cache folder path for pip package manager`);
             }
             let resolvedPath = stdout.trim();
