@@ -21,7 +21,7 @@ class PipCache extends CacheDistributor {
   }
 
   protected async getCacheGlobalDirectories() {
-    let exitCode = 0;
+    let exitCode = 1;
     let stdout = '';
     let stderr = '';
 
@@ -62,7 +62,7 @@ class PipCache extends CacheDistributor {
       }
     }
 
-    if (exitCode !== 0 && stderr) {
+    if (stderr) {
       throw new Error(
         `Could not get cache folder path for pip package manager`
       );

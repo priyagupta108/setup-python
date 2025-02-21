@@ -98880,7 +98880,7 @@ class PipCache extends cache_distributor_1.default {
     }
     getCacheGlobalDirectories() {
         return __awaiter(this, void 0, void 0, function* () {
-            let exitCode = 0;
+            let exitCode = 1;
             let stdout = '';
             let stderr = '';
             // Add temporary fix for Windows
@@ -98920,7 +98920,7 @@ class PipCache extends cache_distributor_1.default {
                     core.debug(`exitCode test: ${exitCode}`);
                 }
             }
-            if (exitCode !== 0 && stderr) {
+            if (stderr) {
                 throw new Error(`Could not get cache folder path for pip package manager`);
             }
             let resolvedPath = stdout.trim();
