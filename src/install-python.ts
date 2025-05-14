@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs'; // Import fs to handle file system checks
 import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
 import * as exec from '@actions/exec';
@@ -13,6 +14,26 @@ const MANIFEST_REPO_OWNER = 'actions';
 const MANIFEST_REPO_NAME = 'python-versions';
 const MANIFEST_REPO_BRANCH = 'main';
 export const MANIFEST_URL = `https://raw.githubusercontent.com/${MANIFEST_REPO_OWNER}/${MANIFEST_REPO_NAME}/${MANIFEST_REPO_BRANCH}/versions-manifest.json`;
+
+// Function to ensure the correct pip version is installed
+export async function ensureCorrectPipVersion(
+  pythonLocation: string,
+  pipVersion?: string
+) {
+  const pythonBinary = path.join(pythonLocation, 'python');
+  core.info('Ensuring correct pip version...');
+  if (pipVersion) {
+    core.info(`Installing pip version ${pipVersion}`);
+    await exec.exec(`${pythonBinary} -m ensurepip`);
+    await exec.exec(
+      `${pythonBinary} -m pip install --upgrade pip==${pipVersion}`
+    );
+  } else {
+    core.info('Installing the latest pip version');
+    await exec.exec(`${pythonBinary} -m ensurepip`);
+    await exec.exec(`${pythonBinary} -m pip install --upgrade pip`);
+  }
+}
 
 export async function findReleaseFromManifest(
   semanticVersionSpec: string,
@@ -32,6 +53,7 @@ export async function findReleaseFromManifest(
 
   return foundRelease;
 }
+
 function isIToolRelease(obj: any): obj is IToolRelease {
   return (
     typeof obj === 'object' &&
@@ -48,6 +70,7 @@ function isIToolRelease(obj: any): obj is IToolRelease {
     )
   );
 }
+
 export async function getManifest(): Promise<tc.IToolRelease[]> {
   try {
     const repoManifest = await getManifestFromRepo();
@@ -119,8 +142,21 @@ async function installPython(workingDirectory: string, pipVersion?: string) {
     await exec.exec('bash', ['./setup.sh'], options);
   }
 
-  // Install a specific or latest pip version
+  // Resolve Python binary path
   const pythonBinary = path.join(workingDirectory, 'python');
+  if (!fs.existsSync(pythonBinary)) {
+    throw new Error(`Python executable not found at ${pythonBinary}`);
+  }
+
+  try {
+    fs.accessSync(pythonBinary, fs.constants.X_OK);
+  } catch {
+    throw new Error(
+      `Python executable at ${pythonBinary} is not executable. Check permissions.`
+    );
+  }
+
+  // Install a specific or latest pip version
   core.info(`Installing pip...`);
   await exec.exec(`${pythonBinary} -m ensurepip`);
 
@@ -135,14 +171,16 @@ async function installPython(workingDirectory: string, pipVersion?: string) {
   }
 }
 
+// Updated installCpythonFromRelease function
 export async function installCpythonFromRelease(release: tc.IToolRelease) {
   if (!release.files || release.files.length === 0) {
     throw new Error('No files found in the release to download.');
   }
-  const downloadUrl = release.files[0].download_url;
 
+  const downloadUrl = release.files[0].download_url;
   core.info(`Download from "${downloadUrl}"`);
   let pythonPath = '';
+
   try {
     const fileName = getDownloadFileName(downloadUrl);
     pythonPath = await tc.downloadTool(downloadUrl, fileName, AUTH);
@@ -155,8 +193,8 @@ export async function installCpythonFromRelease(release: tc.IToolRelease) {
     }
 
     core.info('Execute installation script');
-    const pipVersion = core.getInput('pip-version'); // Fetch the pip-version input
-    await installPython(pythonExtractedFolder, pipVersion);
+    const pipVersion = core.getInput('pip-version'); // Get the pip-version input
+    await ensureCorrectPipVersion(pythonExtractedFolder, pipVersion); // Ensure correct pip version
   } catch (err) {
     if (err instanceof tc.HTTPError) {
       // Rate limit?
@@ -166,7 +204,7 @@ export async function installCpythonFromRelease(release: tc.IToolRelease) {
         );
       } else if (err.httpStatusCode === 429) {
         core.info(
-          `Received HTTP status code 429.  This usually indicates the rate limit has been exceeded`
+          `Received HTTP status code 429.  This usually indicates the rate limit has been exceeded.`
         );
       } else {
         core.info(err.message);

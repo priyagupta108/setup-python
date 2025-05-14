@@ -96719,8 +96719,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.installCpythonFromRelease = exports.getManifestFromURL = exports.getManifestFromRepo = exports.getManifest = exports.findReleaseFromManifest = exports.MANIFEST_URL = void 0;
+exports.installCpythonFromRelease = exports.getManifestFromURL = exports.getManifestFromRepo = exports.getManifest = exports.findReleaseFromManifest = exports.ensureCorrectPipVersion = exports.MANIFEST_URL = void 0;
 const path = __importStar(__nccwpck_require__(6928));
+const fs = __importStar(__nccwpck_require__(9896)); // Import fs to handle file system checks
 const core = __importStar(__nccwpck_require__(7484));
 const tc = __importStar(__nccwpck_require__(3472));
 const exec = __importStar(__nccwpck_require__(5236));
@@ -96732,6 +96733,24 @@ const MANIFEST_REPO_OWNER = 'actions';
 const MANIFEST_REPO_NAME = 'python-versions';
 const MANIFEST_REPO_BRANCH = 'main';
 exports.MANIFEST_URL = `https://raw.githubusercontent.com/${MANIFEST_REPO_OWNER}/${MANIFEST_REPO_NAME}/${MANIFEST_REPO_BRANCH}/versions-manifest.json`;
+// Function to ensure the correct pip version is installed
+function ensureCorrectPipVersion(pythonLocation, pipVersion) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const pythonBinary = path.join(pythonLocation, 'python');
+        core.info('Ensuring correct pip version...');
+        if (pipVersion) {
+            core.info(`Installing pip version ${pipVersion}`);
+            yield exec.exec(`${pythonBinary} -m ensurepip`);
+            yield exec.exec(`${pythonBinary} -m pip install --upgrade pip==${pipVersion}`);
+        }
+        else {
+            core.info('Installing the latest pip version');
+            yield exec.exec(`${pythonBinary} -m ensurepip`);
+            yield exec.exec(`${pythonBinary} -m pip install --upgrade pip`);
+        }
+    });
+}
+exports.ensureCorrectPipVersion = ensureCorrectPipVersion;
 function findReleaseFromManifest(semanticVersionSpec, architecture, manifest) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!manifest) {
@@ -96815,8 +96834,18 @@ function installPython(workingDirectory, pipVersion) {
         else {
             yield exec.exec('bash', ['./setup.sh'], options);
         }
-        // Install a specific or latest pip version
+        // Resolve Python binary path
         const pythonBinary = path.join(workingDirectory, 'python');
+        if (!fs.existsSync(pythonBinary)) {
+            throw new Error(`Python executable not found at ${pythonBinary}`);
+        }
+        try {
+            fs.accessSync(pythonBinary, fs.constants.X_OK);
+        }
+        catch (_a) {
+            throw new Error(`Python executable at ${pythonBinary} is not executable. Check permissions.`);
+        }
+        // Install a specific or latest pip version
         core.info(`Installing pip...`);
         yield exec.exec(`${pythonBinary} -m ensurepip`);
         if (pipVersion) {
@@ -96829,6 +96858,7 @@ function installPython(workingDirectory, pipVersion) {
         }
     });
 }
+// Updated installCpythonFromRelease function
 function installCpythonFromRelease(release) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!release.files || release.files.length === 0) {
@@ -96849,8 +96879,8 @@ function installCpythonFromRelease(release) {
                 pythonExtractedFolder = yield tc.extractTar(pythonPath);
             }
             core.info('Execute installation script');
-            const pipVersion = core.getInput('pip-version'); // Fetch the pip-version input
-            yield installPython(pythonExtractedFolder, pipVersion);
+            const pipVersion = core.getInput('pip-version'); // Get the pip-version input
+            yield ensureCorrectPipVersion(pythonExtractedFolder, pipVersion); // Ensure correct pip version
         }
         catch (err) {
             if (err instanceof tc.HTTPError) {
@@ -96859,7 +96889,7 @@ function installCpythonFromRelease(release) {
                     core.error(`Received HTTP status code 403. This indicates a permission issue or restricted access.`);
                 }
                 else if (err.httpStatusCode === 429) {
-                    core.info(`Received HTTP status code 429.  This usually indicates the rate limit has been exceeded`);
+                    core.info(`Received HTTP status code 429.  This usually indicates the rate limit has been exceeded.`);
                 }
                 else {
                     core.info(err.message);
