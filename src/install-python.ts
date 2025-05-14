@@ -95,7 +95,7 @@ export async function getManifestFromURL(): Promise<tc.IToolRelease[]> {
   return response.result;
 }
 
-async function installPython(workingDirectory: string) {
+async function installPython(workingDirectory: string, pipVersion?: string) {
   const options: ExecOptions = {
     cwd: workingDirectory,
     env: {
@@ -117,6 +117,21 @@ async function installPython(workingDirectory: string) {
     await exec.exec('powershell', ['./setup.ps1'], options);
   } else {
     await exec.exec('bash', ['./setup.sh'], options);
+  }
+
+  // Install a specific or latest pip version
+  const pythonBinary = path.join(workingDirectory, 'python');
+  core.info(`Installing pip...`);
+  await exec.exec(`${pythonBinary} -m ensurepip`);
+
+  if (pipVersion) {
+    core.info(`Installing pip version ${pipVersion}`);
+    await exec.exec(
+      `${pythonBinary} -m pip install --upgrade pip==${pipVersion}`
+    );
+  } else {
+    core.info('Upgrading to the latest pip version');
+    await exec.exec(`${pythonBinary} -m pip install --upgrade pip`);
   }
 }
 
@@ -140,7 +155,8 @@ export async function installCpythonFromRelease(release: tc.IToolRelease) {
     }
 
     core.info('Execute installation script');
-    await installPython(pythonExtractedFolder);
+    const pipVersion = core.getInput('pip-version'); // Fetch the pip-version input
+    await installPython(pythonExtractedFolder, pipVersion);
   } catch (err) {
     if (err instanceof tc.HTTPError) {
       // Rate limit?

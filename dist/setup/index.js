@@ -96794,7 +96794,7 @@ function getManifestFromURL() {
     });
 }
 exports.getManifestFromURL = getManifestFromURL;
-function installPython(workingDirectory) {
+function installPython(workingDirectory, pipVersion) {
     return __awaiter(this, void 0, void 0, function* () {
         const options = {
             cwd: workingDirectory,
@@ -96814,6 +96814,18 @@ function installPython(workingDirectory) {
         }
         else {
             yield exec.exec('bash', ['./setup.sh'], options);
+        }
+        // Install a specific or latest pip version
+        const pythonBinary = path.join(workingDirectory, 'python');
+        core.info(`Installing pip...`);
+        yield exec.exec(`${pythonBinary} -m ensurepip`);
+        if (pipVersion) {
+            core.info(`Installing pip version ${pipVersion}`);
+            yield exec.exec(`${pythonBinary} -m pip install --upgrade pip==${pipVersion}`);
+        }
+        else {
+            core.info('Upgrading to the latest pip version');
+            yield exec.exec(`${pythonBinary} -m pip install --upgrade pip`);
         }
     });
 }
@@ -96837,7 +96849,8 @@ function installCpythonFromRelease(release) {
                 pythonExtractedFolder = yield tc.extractTar(pythonPath);
             }
             core.info('Execute installation script');
-            yield installPython(pythonExtractedFolder);
+            const pipVersion = core.getInput('pip-version'); // Fetch the pip-version input
+            yield installPython(pythonExtractedFolder, pipVersion);
         }
         catch (err) {
             if (err instanceof tc.HTTPError) {
