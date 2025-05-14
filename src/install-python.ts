@@ -32,7 +32,6 @@ export async function findReleaseFromManifest(
 
   return foundRelease;
 }
-
 function isIToolRelease(obj: any): obj is IToolRelease {
   return (
     typeof obj === 'object' &&
@@ -49,7 +48,6 @@ function isIToolRelease(obj: any): obj is IToolRelease {
     )
   );
 }
-
 export async function getManifest(): Promise<tc.IToolRelease[]> {
   try {
     const repoManifest = await getManifestFromRepo();
@@ -143,11 +141,9 @@ export async function installCpythonFromRelease(release: tc.IToolRelease) {
 
     core.info('Execute installation script');
     await installPython(pythonExtractedFolder);
-
-    // Ensure pip version is installed or updated
-    await ensurePipVersion(pythonExtractedFolder);
   } catch (err) {
     if (err instanceof tc.HTTPError) {
+      // Rate limit?
       if (err.httpStatusCode === 403) {
         core.error(
           `Received HTTP status code 403. This indicates a permission issue or restricted access.`
@@ -164,20 +160,5 @@ export async function installCpythonFromRelease(release: tc.IToolRelease) {
       }
     }
     throw err;
-  }
-}
-
-// New function to ensure pip version is installed/updated
-async function ensurePipVersion(pythonPath: string) {
-  const pipVersion = core.getInput('pip-version');
-  if (pipVersion) {
-    core.info(`Installing or updating pip to version ${pipVersion}`);
-    const pythonBinary = path.join(
-      pythonPath,
-      IS_WINDOWS ? 'python.exe' : 'bin/python'
-    );
-    await exec.exec(
-      `${pythonBinary} -m pip install --upgrade pip==${pipVersion}`
-    );
   }
 }

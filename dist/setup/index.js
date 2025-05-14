@@ -96838,11 +96838,10 @@ function installCpythonFromRelease(release) {
             }
             core.info('Execute installation script');
             yield installPython(pythonExtractedFolder);
-            // Ensure pip version is installed or updated
-            yield ensurePipVersion(pythonExtractedFolder);
         }
         catch (err) {
             if (err instanceof tc.HTTPError) {
+                // Rate limit?
                 if (err.httpStatusCode === 403) {
                     core.error(`Received HTTP status code 403. This indicates a permission issue or restricted access.`);
                 }
@@ -96861,17 +96860,6 @@ function installCpythonFromRelease(release) {
     });
 }
 exports.installCpythonFromRelease = installCpythonFromRelease;
-// New function to ensure pip version is installed/updated
-function ensurePipVersion(pythonPath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const pipVersion = core.getInput('pip-version');
-        if (pipVersion) {
-            core.info(`Installing or updating pip to version ${pipVersion}`);
-            const pythonBinary = path.join(pythonPath, utils_1.IS_WINDOWS ? 'python.exe' : 'bin/python');
-            yield exec.exec(`${pythonBinary} -m pip install --upgrade pip==${pipVersion}`);
-        }
-    });
-}
 
 
 /***/ }),
@@ -96924,6 +96912,7 @@ const finderGraalPy = __importStar(__nccwpck_require__(1663));
 const path = __importStar(__nccwpck_require__(6928));
 const os = __importStar(__nccwpck_require__(857));
 const fs_1 = __importDefault(__nccwpck_require__(9896));
+const exec = __importStar(__nccwpck_require__(5236));
 const cache_factory_1 = __nccwpck_require__(665);
 const utils_1 = __nccwpck_require__(1798);
 function isPyPyVersion(versionSpec) {
@@ -96975,6 +96964,41 @@ function resolveVersionInput() {
     }
     return versions;
 }
+function ensurePipVersion(pythonPath, version) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const pipVersion = core.getInput('pip-version');
+        if (pipVersion) {
+            core.info(`Installing or updating pip to version ${pipVersion}`);
+            // Resolve the correct path to the Python binary
+            const pythonBinary = path.join(pythonPath, utils_1.IS_MAC || os.platform() === 'linux' ? 'bin/python' : 'python.exe');
+            // Check if the Python binary exists
+            if (!fs_1.default.existsSync(pythonBinary)) {
+                throw new Error(`Unable to locate executable file: ${pythonBinary}. Please verify the Python version and ensure it is installed.`);
+            }
+            // Install the specified pip version
+            yield exec.exec(`${pythonBinary} -m pip install --upgrade pip==${pipVersion}`);
+        }
+    });
+}
+const pipVersion = core.getInput('pip-version') || 'latest';
+function installPip(pipVersion) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let pipInstallCmd = '';
+        if (pipVersion === 'latest') {
+            pipInstallCmd = 'python -m ensurepip --upgrade';
+        }
+        else {
+            pipInstallCmd = `python -m pip install --upgrade pip==${pipVersion}`;
+        }
+        try {
+            yield exec.exec(pipInstallCmd);
+            console.log(`Successfully installed pip ${pipVersion}`);
+        }
+        catch (error) {
+            core.setFailed(`Failed to install pip ${pipVersion}: ${error}`);
+        }
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
@@ -97013,6 +97037,8 @@ function run() {
                         const installed = yield finder.useCpythonVersion(version, arch, updateEnvironment, checkLatest, allowPreReleases, freethreaded);
                         pythonVersion = installed.version;
                         core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
+                        // Ensure pip version is installed or updated
+                        yield installPip(pipVersion);
                     }
                 }
                 core.endGroup();
@@ -97022,7 +97048,7 @@ function run() {
                 }
             }
             else {
-                core.warning('The `python-version` input is not set.  The version of Python currently in `PATH` will be used.');
+                core.warning('The `python-version` input is not set. The version of Python currently in `PATH` will be used.');
             }
             const matchersPath = path.join(__dirname, '../..', '.github');
             core.info(`##[add-matcher]${path.join(matchersPath, 'python.json')}`);
