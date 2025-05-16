@@ -77,47 +77,13 @@ function resolveVersionInput() {
   return versions;
 }
 
-async function ensurePipVersion(pythonPath: string, version: string) {
+// Install a specific pip version
+async function installPip() {
+  core.info(`Installing pip...`);
   const pipVersion = core.getInput('pip-version');
   if (pipVersion) {
-    core.info(`Installing or updating pip to version ${pipVersion}`);
-
-    // Resolve the correct path to the Python binary
-    const pythonBinary = path.join(
-      pythonPath,
-      IS_MAC || os.platform() === 'linux' ? 'bin/python' : 'python.exe'
-    );
-
-    // Check if the Python binary exists
-    if (!fs.existsSync(pythonBinary)) {
-      throw new Error(
-        `Unable to locate executable file: ${pythonBinary}. Please verify the Python version and ensure it is installed.`
-      );
-    }
-
-    // Install the specified pip version
-    await exec.exec(
-      `${pythonBinary} -m pip install --upgrade pip==${pipVersion}`
-    );
-  }
-}
-
-const pipVersion = core.getInput('pip-version') || 'latest';
-
-async function installPip(pipVersion: string) {
-  let pipInstallCmd = '';
-
-  if (pipVersion === 'latest') {
-    pipInstallCmd = 'python -m ensurepip --upgrade';
-  } else {
-    pipInstallCmd = `python -m pip install --upgrade pip==${pipVersion}`;
-  }
-
-  try {
-    await exec.exec(pipInstallCmd);
-    console.log(`Successfully installed pip ${pipVersion}`);
-  } catch (error) {
-    core.setFailed(`Failed to install pip ${pipVersion}: ${error}`);
+    core.info(`Installing pip version ${pipVersion}`);
+    await exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
   }
 }
 
@@ -183,9 +149,7 @@ async function run() {
           );
           pythonVersion = installed.version;
           core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
-
-          // Ensure pip version is installed or updated
-          await installPip(pipVersion);
+          await installPip();
         }
       }
       core.endGroup();

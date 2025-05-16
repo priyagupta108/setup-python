@@ -96964,38 +96964,14 @@ function resolveVersionInput() {
     }
     return versions;
 }
-function ensurePipVersion(pythonPath, version) {
+// Install a specific pip version
+function installPip() {
     return __awaiter(this, void 0, void 0, function* () {
+        core.info(`Installing pip...`);
         const pipVersion = core.getInput('pip-version');
         if (pipVersion) {
-            core.info(`Installing or updating pip to version ${pipVersion}`);
-            // Resolve the correct path to the Python binary
-            const pythonBinary = path.join(pythonPath, utils_1.IS_MAC || os.platform() === 'linux' ? 'bin/python' : 'python.exe');
-            // Check if the Python binary exists
-            if (!fs_1.default.existsSync(pythonBinary)) {
-                throw new Error(`Unable to locate executable file: ${pythonBinary}. Please verify the Python version and ensure it is installed.`);
-            }
-            // Install the specified pip version
-            yield exec.exec(`${pythonBinary} -m pip install --upgrade pip==${pipVersion}`);
-        }
-    });
-}
-const pipVersion = core.getInput('pip-version') || 'latest';
-function installPip(pipVersion) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let pipInstallCmd = '';
-        if (pipVersion === 'latest') {
-            pipInstallCmd = 'python -m ensurepip --upgrade';
-        }
-        else {
-            pipInstallCmd = `python -m pip install --upgrade pip==${pipVersion}`;
-        }
-        try {
-            yield exec.exec(pipInstallCmd);
-            console.log(`Successfully installed pip ${pipVersion}`);
-        }
-        catch (error) {
-            core.setFailed(`Failed to install pip ${pipVersion}: ${error}`);
+            core.info(`Installing pip version ${pipVersion}`);
+            yield exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
         }
     });
 }
@@ -97037,8 +97013,7 @@ function run() {
                         const installed = yield finder.useCpythonVersion(version, arch, updateEnvironment, checkLatest, allowPreReleases, freethreaded);
                         pythonVersion = installed.version;
                         core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
-                        // Ensure pip version is installed or updated
-                        yield installPip(pipVersion);
+                        yield installPip();
                     }
                 }
                 core.endGroup();
