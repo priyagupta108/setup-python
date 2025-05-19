@@ -97012,8 +97012,8 @@ function run() {
                         }
                         const installed = yield finder.useCpythonVersion(version, arch, updateEnvironment, checkLatest, allowPreReleases, freethreaded);
                         pythonVersion = installed.version;
-                        core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
                         yield installPip();
+                        core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
                     }
                 }
                 core.endGroup();

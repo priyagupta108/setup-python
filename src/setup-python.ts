@@ -148,8 +148,8 @@ async function run() {
             freethreaded
           );
           pythonVersion = installed.version;
-          core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
           await installPip();
+          core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
         }
       }
       core.endGroup();
