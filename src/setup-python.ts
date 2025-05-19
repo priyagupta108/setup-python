@@ -79,10 +79,11 @@ function resolveVersionInput() {
 
 // Install a specific pip version
 async function installPip() {
-  core.info(`Installing pip...`);
   const pipVersion = core.getInput('pip-version');
   if (pipVersion) {
-    core.info(`Installing pip version ${pipVersion}`);
+    core.info(
+      `pip-version input is specified, Installing pip version ${pipVersion}`
+    );
     await exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
   }
 }

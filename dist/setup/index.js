@@ -96967,10 +96967,9 @@ function resolveVersionInput() {
 // Install a specific pip version
 function installPip() {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info(`Installing pip...`);
         const pipVersion = core.getInput('pip-version');
         if (pipVersion) {
-            core.info(`Installing pip version ${pipVersion}`);
+            core.info(`pip-version input is specified, Installing pip version ${pipVersion}`);
             yield exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
         }
     });
