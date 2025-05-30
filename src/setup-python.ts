@@ -78,13 +78,26 @@ function resolveVersionInput() {
 }
 
 // Install a specific pip version
-async function installPip() {
+// async function installPip() {
+//   const pipVersion = core.getInput('pip-version');
+//   if (pipVersion) {
+//     core.info(
+//       `pip-version input is specified, Installing pip version ${pipVersion}`
+//     );
+//     await exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
+//   }
+// }
+
+async function installPip(pythonLocation: string) {
   const pipVersion = core.getInput('pip-version');
+  const pythonBinary = path.join(pythonLocation, 'python');
   if (pipVersion) {
     core.info(
       `pip-version input is specified, Installing pip version ${pipVersion}`
     );
-    await exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
+    await exec.exec(
+      `${pythonLocation}/python -m pip install --upgrade pip==${pipVersion}`
+    );
   }
 }
 
@@ -149,7 +162,8 @@ async function run() {
             freethreaded
           );
           pythonVersion = installed.version;
-          await installPip();
+          const pythonPath = installed.pythonPath;
+          await installPip(pythonPath);
           core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
         }
       }

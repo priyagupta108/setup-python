@@ -96183,7 +96183,7 @@ function useCpythonVersion(version, architecture, updateEnvironment, checkLatest
         }
         core.setOutput('python-version', pythonVersion);
         core.setOutput('python-path', pythonPath);
-        return { impl: 'CPython', version: pythonVersion };
+        return { impl: 'CPython', version: pythonVersion, pythonPath: pythonPath };
     });
 }
 exports.useCpythonVersion = useCpythonVersion;
@@ -96965,12 +96965,22 @@ function resolveVersionInput() {
     return versions;
 }
 // Install a specific pip version
-function installPip() {
+// async function installPip() {
+//   const pipVersion = core.getInput('pip-version');
+//   if (pipVersion) {
+//     core.info(
+//       `pip-version input is specified, Installing pip version ${pipVersion}`
+//     );
+//     await exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
+//   }
+// }
+function installPip(pythonLocation) {
     return __awaiter(this, void 0, void 0, function* () {
         const pipVersion = core.getInput('pip-version');
+        const pythonBinary = path.join(pythonLocation, 'python');
         if (pipVersion) {
             core.info(`pip-version input is specified, Installing pip version ${pipVersion}`);
-            yield exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
+            yield exec.exec(`${pythonLocation}/python -m pip install --upgrade pip==${pipVersion}`);
         }
     });
 }
@@ -97011,7 +97021,8 @@ function run() {
                         }
                         const installed = yield finder.useCpythonVersion(version, arch, updateEnvironment, checkLatest, allowPreReleases, freethreaded);
                         pythonVersion = installed.version;
-                        yield installPip();
+                        const pythonPath = installed.pythonPath;
+                        yield installPip(pythonPath);
                         core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
                     }
                 }
