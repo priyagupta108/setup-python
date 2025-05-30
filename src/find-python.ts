@@ -178,8 +178,8 @@ export async function useCpythonVersion(
   }
   core.setOutput('python-version', pythonVersion);
   core.setOutput('python-path', pythonPath);
-
-  return {impl: 'CPython', version: pythonVersion, pythonPath: pythonPath};
+  const pythonPath2 = IS_WINDOWS ? installDir : _binDir;
+  return {impl: 'CPython', version: pythonVersion, pythonPath: pythonPath2};
 }
 
 /* Desugar free threaded and dev versions */

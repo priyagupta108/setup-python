@@ -96183,7 +96183,8 @@ function useCpythonVersion(version, architecture, updateEnvironment, checkLatest
         }
         core.setOutput('python-version', pythonVersion);
         core.setOutput('python-path', pythonPath);
-        return { impl: 'CPython', version: pythonVersion, pythonPath: pythonPath };
+        const pythonPath2 = utils_1.IS_WINDOWS ? installDir : _binDir;
+        return { impl: 'CPython', version: pythonVersion, pythonPath: pythonPath2 };
     });
 }
 exports.useCpythonVersion = useCpythonVersion;
