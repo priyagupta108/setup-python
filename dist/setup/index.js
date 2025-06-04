@@ -96068,6 +96068,7 @@ const semver = __importStar(__nccwpck_require__(2088));
 const installer = __importStar(__nccwpck_require__(1919));
 const core = __importStar(__nccwpck_require__(7484));
 const tc = __importStar(__nccwpck_require__(3472));
+const exec = __importStar(__nccwpck_require__(5236));
 // Python has "scripts" or "bin" directories where command-line tools that come with packages are installed.
 // This is where pip is, along with anything that pip installs.
 // There is a separate directory for `pip install --user`.
@@ -96087,6 +96088,15 @@ function binDir(installDir) {
     else {
         return path.join(installDir, 'bin');
     }
+}
+function installPip(pythonLocation) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const pipVersion = core.getInput('pip-version');
+        if (pipVersion) {
+            core.info(`pip-version input is specified, Installing pip version ${pipVersion}`);
+            yield exec.exec(`${pythonLocation}/python -m pip install --upgrade pip==${pipVersion}`);
+        }
+    });
 }
 function useCpythonVersion(version, architecture, updateEnvironment, checkLatest, allowPreReleases, freethreaded) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -96183,8 +96193,9 @@ function useCpythonVersion(version, architecture, updateEnvironment, checkLatest
         }
         core.setOutput('python-version', pythonVersion);
         core.setOutput('python-path', pythonPath);
-        const pythonPath2 = utils_1.IS_WINDOWS ? installDir : _binDir;
-        return { impl: 'CPython', version: pythonVersion, pythonPath: pythonPath2 };
+        const binaryPath = utils_1.IS_WINDOWS ? installDir : _binDir;
+        yield installPip(binaryPath);
+        return { impl: 'CPython', version: pythonVersion };
     });
 }
 exports.useCpythonVersion = useCpythonVersion;
@@ -96913,7 +96924,6 @@ const finderGraalPy = __importStar(__nccwpck_require__(1663));
 const path = __importStar(__nccwpck_require__(6928));
 const os = __importStar(__nccwpck_require__(857));
 const fs_1 = __importDefault(__nccwpck_require__(9896));
-const exec = __importStar(__nccwpck_require__(5236));
 const cache_factory_1 = __nccwpck_require__(665);
 const utils_1 = __nccwpck_require__(1798);
 function isPyPyVersion(versionSpec) {
@@ -96975,16 +96985,6 @@ function resolveVersionInput() {
 //     await exec.exec(`python -m pip install --upgrade pip==${pipVersion}`);
 //   }
 // }
-function installPip(pythonLocation) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const pipVersion = core.getInput('pip-version');
-        const pythonBinary = path.join(pythonLocation, 'python');
-        if (pipVersion) {
-            core.info(`pip-version input is specified, Installing pip version ${pipVersion}`);
-            yield exec.exec(`${pythonLocation}/python -m pip install --upgrade pip==${pipVersion}`);
-        }
-    });
-}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
@@ -97022,8 +97022,6 @@ function run() {
                         }
                         const installed = yield finder.useCpythonVersion(version, arch, updateEnvironment, checkLatest, allowPreReleases, freethreaded);
                         pythonVersion = installed.version;
-                        const pythonPath = installed.pythonPath;
-                        yield installPip(pythonPath);
                         core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
                     }
                 }

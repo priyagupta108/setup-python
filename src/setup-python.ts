@@ -5,7 +5,6 @@ import * as finderGraalPy from './find-graalpy';
 import * as path from 'path';
 import * as os from 'os';
 import fs from 'fs';
-import * as exec from '@actions/exec';
 import {getCacheDistributor} from './cache-distributions/cache-factory';
 import {
   isCacheFeatureAvailable,
@@ -88,19 +87,6 @@ function resolveVersionInput() {
 //   }
 // }
 
-async function installPip(pythonLocation: string) {
-  const pipVersion = core.getInput('pip-version');
-  const pythonBinary = path.join(pythonLocation, 'python');
-  if (pipVersion) {
-    core.info(
-      `pip-version input is specified, Installing pip version ${pipVersion}`
-    );
-    await exec.exec(
-      `${pythonLocation}/python -m pip install --upgrade pip==${pipVersion}`
-    );
-  }
-}
-
 async function run() {
   if (IS_MAC) {
     process.env['AGENT_TOOLSDIRECTORY'] = '/Users/runner/hostedtoolcache';
@@ -162,8 +148,7 @@ async function run() {
             freethreaded
           );
           pythonVersion = installed.version;
-          const pythonPath = installed.pythonPath;
-          await installPip(pythonPath);
+
           core.info(`Successfully set up ${installed.impl} (${pythonVersion})`);
         }
       }
