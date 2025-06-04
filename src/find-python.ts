@@ -38,7 +38,7 @@ async function installPip(pythonLocation: string) {
       `pip-version input is specified, Installing pip version ${pipVersion}`
     );
     await exec.exec(
-      `${pythonLocation}/python -m pip install --upgrade pip==${pipVersion}`
+      `${pythonLocation}/python -m pip install --upgrade pip==${pipVersion} --disable-pip-version-check --no-warn-script-location`
     );
   }
 }

@@ -96094,7 +96094,7 @@ function installPip(pythonLocation) {
         const pipVersion = core.getInput('pip-version');
         if (pipVersion) {
             core.info(`pip-version input is specified, Installing pip version ${pipVersion}`);
-            yield exec.exec(`${pythonLocation}/python -m pip install --upgrade pip==${pipVersion}`);
+            yield exec.exec(`${pythonLocation}/python -m pip install --upgrade pip==${pipVersion} --disable-pip-version-check --no-warn-script-location`);
         }
     });
 }
