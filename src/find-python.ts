@@ -31,14 +31,24 @@ function binDir(installDir: string): string {
     return path.join(installDir, 'bin');
   }
 }
+
 async function installPip(pythonLocation: string) {
   const pipVersion = core.getInput('pip-version');
+
+  // Validate pip-version format: major[.minor][.patch]
+  const versionRegex = /^\d+(\.\d+)?(\.\d+)?$/;
+  if (pipVersion && !versionRegex.test(pipVersion)) {
+    throw new Error(
+      `Invalid pip-version: ${pipVersion}. Please enter a version in the format: major[.minor][.patch]`
+    );
+  }
+
   if (pipVersion) {
     core.info(
-      `pip-version input is specified, Installing pip version ${pipVersion}`
+      `pip-version input is specified. Installing pip version ${pipVersion}`
     );
     await exec.exec(
-      `${pythonLocation}/python -m pip install --upgrade pip==${pipVersion} --disable-pip-version-check --no-warn-script-location -q`
+      `${pythonLocation}/python -m pip install --upgrade pip==${pipVersion} --disable-pip-version-check --no-warn-script-location`
     );
   }
 }

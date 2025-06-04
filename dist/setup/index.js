@@ -96092,9 +96092,14 @@ function binDir(installDir) {
 function installPip(pythonLocation) {
     return __awaiter(this, void 0, void 0, function* () {
         const pipVersion = core.getInput('pip-version');
+        // Validate pip-version format: major[.minor][.patch]
+        const versionRegex = /^\d+(\.\d+)?(\.\d+)?$/;
+        if (pipVersion && !versionRegex.test(pipVersion)) {
+            throw new Error(`Invalid pip-version: ${pipVersion}. Please enter a version in the format: major[.minor][.patch]`);
+        }
         if (pipVersion) {
-            core.info(`pip-version input is specified, Installing pip version ${pipVersion}`);
-            yield exec.exec(`${pythonLocation}/python -m pip install --upgrade pip==${pipVersion} --disable-pip-version-check --no-warn-script-location -q`);
+            core.info(`pip-version input is specified. Installing pip version ${pipVersion}`);
+            yield exec.exec(`${pythonLocation}/python -m pip install --upgrade pip==${pipVersion} --disable-pip-version-check --no-warn-script-location`);
         }
     });
 }
