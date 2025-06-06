@@ -652,7 +652,7 @@ The version of Pip should be specified in the format `major`, `major.minor`, or 
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          ppython-version: '3.13'
+          python-version: '3.13'
           pip-version: '25.0.1'
       - run: pip --version 
 ```
