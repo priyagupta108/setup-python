@@ -642,4 +642,18 @@ jobs:
           allow-prereleases: true
       - run: pipx run nox --error-on-missing-interpreters -s tests-${{ matrix.python_version }}
 ```
+## Using the pip-version input
 
+The `pip-version` input allows you to specify the desired version of pip to use with the Python version.
+The pip version should be provided in the format `major`, `major.minor`, or `major.minor.patch` (for example: 25, 25.0, or 25.0.1).
+
+```yaml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          ppython-version: '3.13'
+          pip-version: '25.0.1'
+      - run: pip --version 
+```
+>**Note:** The pip-version input is only supported with Python versions (not with PyPy or GraalPy). Specifying a specific or outdated pip version may result in compatibility or security issues.
