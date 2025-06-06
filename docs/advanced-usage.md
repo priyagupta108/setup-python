@@ -645,7 +645,7 @@ jobs:
 ## Using the pip-version input
 
 The `pip-version` input allows you to specify the desired version of pip to use with the Python version.
-The pip version should be provided in the format `major`, `major.minor`, or `major.minor.patch` (for example: 25, 25.0, or 25.0.1).
+The version of Pip should be specified in the format `major`, `major.minor`, or `major.minor.patch` (for example: 25, 25.0, or 25.0.1).
 
 ```yaml
     steps:
