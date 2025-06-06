@@ -648,12 +648,14 @@ The `pip-version` input allows you to specify the desired version of pip to use 
 The version of Pip should be specified in the format `major`, `major.minor`, or `major.minor.patch` (for example: 25, 25.0, or 25.0.1).
 
 ```yaml
-    steps:
+      steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
           pip-version: '25.0.1'
-      - run: pip --version 
+      - name: Display Pip version
+        run: pip --version
 ```
 >**Note:** The pip-version input is only supported with Python versions (not with PyPy or GraalPy). Specifying a specific or outdated pip version may result in compatibility or security issues.
