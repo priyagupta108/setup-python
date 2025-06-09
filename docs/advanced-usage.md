@@ -644,7 +644,7 @@ jobs:
 ```
 ## Using the pip-version input
 
-The `pip-version` input allows you to specify the desired version of pip to use with the Python version.
+The `pip-version` input allows you to specify the desired version of pip to use with the standard Python version.
 The version of Pip should be specified in the format `major`, `major.minor`, or `major.minor.patch` (for example: 25, 25.0, or 25.0.1).
 
 ```yaml
@@ -658,4 +658,6 @@ The version of Pip should be specified in the format `major`, `major.minor`, or 
       - name: Display Pip version
         run: pip --version
 ```
->**Note:** The pip-version input is only supported with Python versions (not with PyPy or GraalPy). Specifying a specific or outdated pip version may result in compatibility or security issues.
+> The pip-version input is supported only with standard Python versions.  It is not available when using PyPy or GraalPy.
+
+> Using a specific or outdated version of pip may result in compatibility or security issues and can cause job failures. For best practices and guidance, refer to the official [pip documentation](https://pip.pypa.io/en/stable/).
