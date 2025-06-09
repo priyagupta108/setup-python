@@ -6,7 +6,7 @@ on:
       - '**.md'
   push:
     branches:
-      - main
+      - pip-v
       - releases/*
     paths-ignore:
       - '**.md'
