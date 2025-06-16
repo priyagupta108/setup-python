@@ -20,6 +20,7 @@ jobs:
         operating-system:
           [
             windows-latest,
+            windows-11-arm,
             ubuntu-22.04,
             ubuntu-22.04-arm,
             ubuntu-latest,

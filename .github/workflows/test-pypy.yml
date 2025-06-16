@@ -24,6 +24,7 @@ jobs:
           [
             macos-latest,
             windows-latest,
+            windows-11-arm,
             ubuntu-22.04,
             ubuntu-22.04-arm,
             ubuntu-24.04-arm,
@@ -91,6 +92,7 @@ jobs:
           - windows-2019
           - windows-2022
           - windows-2025
+          - windows-11-arm
           - ubuntu-22.04
           - ubuntu-24.04
           - ubuntu-22.04-arm
@@ -141,6 +143,7 @@ jobs:
           [
             macos-latest,
             windows-latest,
+            windows-11-arm,
             ubuntu-22.04,
             ubuntu-22.04-arm,
             ubuntu-24.04-arm,
@@ -175,6 +178,7 @@ jobs:
           [
             macos-latest,
             windows-latest,
+            windows-11-arm,
             ubuntu-22.04,
             ubuntu-22.04-arm,
             ubuntu-24.04-arm,
@@ -217,6 +221,7 @@ jobs:
           [
             macos-latest,
             windows-latest,
+            windows-11-arm,
             ubuntu-22.04,
             ubuntu-22.04-arm,
             ubuntu-24.04-arm,
