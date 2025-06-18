@@ -103,6 +103,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Clear any existing tool cache
+        run: |
+          mv "${{ runner.tool_cache }}" "${{ runner.tool_cache }}.old"
+          mkdir -p "${{ runner.tool_cache }}"
       - name: Setup Python
         id: cache-pipenv
         uses: ./
