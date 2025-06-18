@@ -117,8 +117,10 @@ jobs:
           mv ./__tests__/data/Pipfile.lock .
           mv ./__tests__/data/Pipfile .
           mv ./__tests__/test-pipenv.py .
+      - name: Print all outputs
+        run: echo " ${{ toJSON(steps.cache-pipenv.outputs) }}"
       - name: Print cache-hit value
-        run: ${{ steps.cache-pipenv.outputs.cache-hit }}
+        run: echo '${{ steps.cache-pipenv.outputs.cache-hit }}'
       - name: Install dependencies
         shell: pwsh
         if: steps.cache-pipenv.outputs.cache-hit != 'true'
