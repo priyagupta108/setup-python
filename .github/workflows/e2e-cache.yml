@@ -84,7 +84,7 @@ jobs:
             macos-13
           ]
         python-version:
-          ['3.10', 'pypy-3.10-v7.x', '3.11', 'pypy-3.11-v7.x', '3.12', '3.13']
+          ['3.10', 'pypy-3.10-v7.x', '3.11', 'pypy-3.11-v7.x', '3.12', '3.13.0']
         exclude:
           - os: windows-latest
             python-version: pypy-3.11-v7.x
@@ -121,10 +121,6 @@ jobs:
           mv ./__tests__/data/Pipfile.lock .
           mv ./__tests__/data/Pipfile .
           mv ./__tests__/test-pipenv.py .
-      - name: Print all outputs
-        run: echo " ${{ toJSON(steps.cache-pipenv.outputs) }}"
-      - name: Print cache-hit value
-        run: echo '${{ steps.cache-pipenv.outputs.cache-hit }}'
       - name: Install dependencies
         shell: pwsh
         if: steps.cache-pipenv.outputs.cache-hit != 'true'
