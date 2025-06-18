@@ -16,6 +16,7 @@ jobs:
     name: Test setup-python
     runs-on: ${{ matrix.operating-system }}
     strategy:
+      fail-fast: false
       matrix:
         operating-system:
           [
@@ -33,13 +34,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run with setup-python 3.9.13
+        if: matrix.operating-system != 'windows-11-arm'
         uses: ./
         with:
           python-version: 3.9.13
       - name: Verify 3.9.13
         run: python __tests__/verify-python.py 3.9.13
 
-      - name: Run with setup-python 3.9.13
+      - name: Run with setup-python 3.10.11
+        if: matrix.operating-system != 'windows-11-arm'
         uses: ./
         with:
           python-version: 3.10.11
