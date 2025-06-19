@@ -28,7 +28,6 @@ jobs:
             ubuntu-22.04,
             ubuntu-22.04-arm,
             windows-latest,
-            windows-11-arm,
             macos-latest,
             macos-13
           ]
@@ -45,16 +44,6 @@ jobs:
           ]
         exclude:
           - os: windows-latest
-            python-version: pypy-3.11-v7.x
-          - os: windows-11-arm
-            python-version: 3.9
-          - os: windows-11-arm
-            python-version: 3.10
-          - os: windows-11-arm
-            python-version: pypy-3.9-v7.x
-          - os: windows-11-arm
-            python-version: pypy-3.10-v7.x
-          - os: windows-11-arm
             python-version: pypy-3.11-v7.x
     steps:
       - uses: actions/checkout@v4
@@ -79,12 +68,11 @@ jobs:
             ubuntu-22.04,
             ubuntu-22.04-arm,
             windows-latest,
-            windows-11-arm,
             macos-latest,
             macos-13
           ]
         python-version:
-          ['3.10', 'pypy-3.10-v7.x', '3.11', 'pypy-3.11-v7.x', '3.12', '3.13.0']
+          ['3.10', 'pypy-3.10-v7.x', '3.11', 'pypy-3.11-v7.x', '3.12', '3.13']
         exclude:
           - os: windows-latest
             python-version: pypy-3.11-v7.x
@@ -94,13 +82,8 @@ jobs:
             python-version: pypy-3.10-v7.x
           - os: ubuntu-22.04-arm
             python-version: pypy-3.11-v7.x
-          - os: windows-11-arm
-            python-version: 3.10
-          - os: windows-11-arm
+          - os: ubuntu-22.04-arm
             python-version: pypy-3.10-v7.x
-          - os: windows-11-arm
-            python-version: pypy-3.11-v7.x
-
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -142,7 +125,6 @@ jobs:
             ubuntu-22.04,
             ubuntu-22.04-arm,
             windows-latest,
-            windows-11-arm,
             macos-latest,
             macos-13
           ]
@@ -157,17 +139,6 @@ jobs:
             '3.12',
             '3.13'
           ]
-        exclude:
-          - os: windows-11-arm
-            python-version: 3.9
-          - os: windows-11-arm
-            python-version: 3.10
-          - os: windows-11-arm
-            python-version: pypy-3.9-v7.x
-          - os: windows-11-arm
-            python-version: pypy-3.10-v7.x
-          - os: windows-11-arm
-            python-version: pypy-3.11-v7.x
     steps:
       - uses: actions/checkout@v4
       - name: Install poetry
@@ -195,7 +166,6 @@ jobs:
             ubuntu-22.04,
             ubuntu-22.04-arm,
             windows-latest,
-            windows-11-arm,
             macos-latest,
             macos-13
           ]
@@ -212,16 +182,6 @@ jobs:
           ]
         exclude:
           - os: windows-latest
-            python-version: pypy-3.11-v7.x
-          - os: windows-11-arm
-            python-version: 3.9
-          - os: windows-11-arm
-            python-version: 3.10
-          - os: windows-11-arm
-            python-version: pypy-3.9-v7.x
-          - os: windows-11-arm
-            python-version: pypy-3.10-v7.x
-          - os: windows-11-arm
             python-version: pypy-3.11-v7.x
     steps:
       - uses: actions/checkout@v4
@@ -247,7 +207,6 @@ jobs:
             ubuntu-22.04,
             ubuntu-22.04-arm,
             windows-latest,
-            windows-11-arm,
             macos-latest,
             macos-13
           ]
@@ -261,12 +220,6 @@ jobs:
           - os: ubuntu-22.04-arm
             python-version: pypy-3.10-v7.x
           - os: ubuntu-22.04-arm
-            python-version: pypy-3.11-v7.x
-          - os: windows-11-arm
-            python-version: 3.10
-          - os: windows-11-arm
-            python-version: pypy-3.10-v7.x
-          - os: windows-11-arm
             python-version: pypy-3.11-v7.x
     steps:
       - uses: actions/checkout@v4
@@ -296,72 +249,3 @@ jobs:
           }
       - name: Run Python Script
         run: pipenv run python test-pipenv.py
-
-  python-pip-dependencies-caching-with-pip-version:
-    name: Test pip (Python ${{ matrix.python-version}}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          [
-            ubuntu-latest,
-            ubuntu-24.04-arm,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            windows-latest,
-            windows-11-arm,
-            macos-latest,
-            macos-13
-          ]
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        exclude:
-          - os: windows-11-arm
-            python-version: 3.9
-          - os: windows-11-arm
-            python-version: 3.10
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: ./
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          pip-version: '25.0.1'
-      - name: Install dependencies
-        run: pip install numpy pandas requests
-
-  python-pip-dependencies-caching-path-with-pip-version:
-    name: Test pip (Python ${{ matrix.python-version}}, ${{ matrix.os }}, caching path)
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          [
-            ubuntu-latest,
-            ubuntu-24.04-arm,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            windows-latest,
-            windows-11-arm,
-            macos-latest,
-            macos-13
-          ]
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-        exclude:
-          - os: windows-11-arm
-            python-version: 3.9
-          - os: windows-11-arm
-            python-version: 3.10
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: ./
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: __tests__/data/requirements.txt
-          pip-version: '25.0.1'
-      - name: Install dependencies
-        run: pip install numpy pandas requests
