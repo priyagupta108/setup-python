@@ -3,7 +3,7 @@ name: e2e tests
 on:
   push:
     branches:
-      - main
+      - test-windows-2025-runner
     paths-ignore:
       - '**.md'
   pull_request:
@@ -19,13 +19,7 @@ jobs:
       matrix:
         operating-system:
           [
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            ubuntu-latest,
-            ubuntu-24.04-arm,
-            macos-latest,
-            macos-13
+            windows-2025
           ]
     steps:
       - name: Checkout

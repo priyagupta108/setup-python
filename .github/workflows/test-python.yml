@@ -3,7 +3,7 @@ name: Validate Python e2e
 on:
   push:
     branches:
-      - main
+      - test-windows-2025-runner
     paths-ignore:
       - '**.md'
   pull_request:
@@ -22,13 +22,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
         python: [3.9.13, 3.10.11, 3.11.9, 3.12.3, 3.13.2]
     steps:
@@ -66,13 +60,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
         python: [3.9.13, 3.10.11, 3.11.9, 3.12.3, 3.13.2]
     steps:
@@ -113,13 +101,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
         python: [3.9.13, 3.10.11, 3.11.9, 3.12.3, 3.13.2]
     steps:
@@ -158,13 +140,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
         python: [3.9.13, 3.10.11, 3.11.9, '==3.12.3', 3.13.2]
     steps:
@@ -208,13 +184,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
         python: [3.9.13, 3.10.11, 3.11.9, 3.12.3, 3.13.2]
     steps:
@@ -250,39 +220,39 @@ jobs:
       - name: Run simple code
         run: python -c 'import math; print(math.factorial(5))'
 
-  setup-versions-from-tool-versions-file:
-    name: Setup ${{ matrix.python }} ${{ matrix.os }} .tool-versions file
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
-          ]
-        python: [pypy3.11-7.3.18, graalpy-24.1.2, 3.13.2, 3.14-dev]
-        exclude:
-          - os: windows-latest
-            python: graalpy-24.1.2
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # setup-versions-from-tool-versions-file:
+  #   name: Setup ${{ matrix.python }} ${{ matrix.os }} .tool-versions file
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os:
+  #         [
+  #           macos-latest,
+  #           windows-2025,
+  #           ubuntu-22.04,
+  #           ubuntu-22.04-arm,
+  #           macos-13,
+  #           ubuntu-latest,
+  #           ubuntu-24.04-arm
+  #         ]
+  #       python: [pypy3.11-7.3.18, graalpy-24.1.2, 3.13.2, 3.14-dev]
+  #       exclude:
+  #         - os: windows-2025
+  #           python: graalpy-24.1.2
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: build-tool-versions-file ${{ matrix.python }}
-        run: |
-          echo "python ${{ matrix.python }}" > .tool-versions
+  #     - name: build-tool-versions-file ${{ matrix.python }}
+  #       run: |
+  #         echo "python ${{ matrix.python }}" > .tool-versions
 
-      - name: setup-python using .tool-versions ${{ matrix.python }}
-        id: setup-python-tool-versions
-        uses: ./
-        with:
-          python-version-file: .tool-versions
+  #     - name: setup-python using .tool-versions ${{ matrix.python }}
+  #       id: setup-python-tool-versions
+  #       uses: ./
+  #       with:
+  #         python-version-file: .tool-versions
 
   setup-versions-from-pipfile-with-python_version:
     name: Setup ${{ matrix.python }} ${{ matrix.os }} Pipfile with python_version
@@ -292,13 +262,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
         python: [3.9.13, 3.10.11, 3.11.9, 3.13.2]
     steps:
@@ -342,13 +306,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
         python: [3.9.13, 3.10.11, 3.11.9, 3.13.2]
     steps:
@@ -392,13 +350,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
     steps:
       - name: Checkout
@@ -435,13 +387,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            ubuntu-24.04-arm,
-            ubuntu-latest,
-            macos-13
+            windows-2025
           ]
     steps:
       - name: Checkout
@@ -472,13 +418,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            ubuntu-24.04-arm,
-            ubuntu-latest,
-            macos-13
+            windows-2025
           ]
     steps:
       - name: Checkout
@@ -510,13 +450,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            macos-13,
-            ubuntu-latest,
-            ubuntu-24.04-arm
+            windows-2025
           ]
         python: ['3.9', '3.10', '3.11', '3.12', '3.13']
     steps:
@@ -543,13 +477,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            ubuntu-24.04-arm,
-            ubuntu-latest,
-            macos-13
+            windows-2025
           ]
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
     steps:
@@ -576,13 +504,7 @@ jobs:
       matrix:
         os:
           [
-            macos-latest,
-            windows-latest,
-            ubuntu-22.04,
-            ubuntu-22.04-arm,
-            ubuntu-24.04-arm,
-            ubuntu-latest,
-            macos-13
+            windows-2025
           ]
     steps:
       - uses: actions/checkout@v4
