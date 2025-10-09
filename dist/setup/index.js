@@ -7701,7 +7701,7 @@ exports.create = create;
  *
  * @param patterns  Patterns separated by newlines
  * @param currentWorkspace  Workspace used when matching files
- * @param options   Glob options
+ * @param options   Hash file options (now supports roots, allowFilesOutsideWorkspace, exclude)
  * @param verbose   Enables verbose logging
  */
 function hashFiles(patterns, currentWorkspace = '', options, verbose = false) {
@@ -7710,8 +7710,10 @@ function hashFiles(patterns, currentWorkspace = '', options, verbose = false) {
         if (options && typeof options.followSymbolicLinks === 'boolean') {
             followSymbolicLinks = options.followSymbolicLinks;
         }
+        // Pass all options through to _hashFiles, including new ones (roots, allowFilesOutsideWorkspace, exclude)
         const globber = yield create(patterns, { followSymbolicLinks });
-        return (0, internal_hash_files_1.hashFiles)(globber, currentWorkspace, verbose);
+        // _hashFiles should be updated to use options.roots, options.allowFilesOutsideWorkspace, options.exclude
+        return (0, internal_hash_files_1.hashFiles)(globber, currentWorkspace, options, verbose);
     });
 }
 exports.hashFiles = hashFiles;
@@ -8094,26 +8096,56 @@ const fs = __importStar(__nccwpck_require__(9896));
 const stream = __importStar(__nccwpck_require__(2203));
 const util = __importStar(__nccwpck_require__(9023));
 const path = __importStar(__nccwpck_require__(6928));
-function hashFiles(globber, currentWorkspace, verbose = false) {
+function isInRoots(file, roots) {
+    return roots.some(root => file.startsWith(path.resolve(root) + path.sep));
+}
+function isExcluded(file, excludePatterns) {
+    const basename = path.basename(file);
+    return excludePatterns.some(pattern => {
+        if (pattern.startsWith('*.')) {
+            // Match extension
+            return basename.endsWith(pattern.slice(1));
+        }
+        // Exact match
+        return basename === pattern;
+    });
+}
+function hashFiles(globber, currentWorkspace, options, verbose = false) {
     var _a, e_1, _b, _c;
-    var _d;
+    var _d, _e, _f, _g;
     return __awaiter(this, void 0, void 0, function* () {
         const writeDelegate = verbose ? core.info : core.debug;
         let hasMatch = false;
+        // Determine roots for inclusion (default to currentWorkspace)
         const githubWorkspace = currentWorkspace
             ? currentWorkspace
             : (_d = process.env['GITHUB_WORKSPACE']) !== null && _d !== void 0 ? _d : process.cwd();
+        const roots = (_e = options === null || options === void 0 ? void 0 : options.roots) !== null && _e !== void 0 ? _e : [githubWorkspace];
+        const allowOutside = (_f = options === null || options === void 0 ? void 0 : options.allowFilesOutsideWorkspace) !== null && _f !== void 0 ? _f : false;
+        const excludePatterns = (_g = options === null || options === void 0 ? void 0 : options.exclude) !== null && _g !== void 0 ? _g : [];
         const result = crypto.createHash('sha256');
         let count = 0;
         try {
-            for (var _e = true, _f = __asyncValues(globber.globGenerator()), _g; _g = yield _f.next(), _a = _g.done, !_a; _e = true) {
-                _c = _g.value;
-                _e = false;
+            for (var _h = true, _j = __asyncValues(globber.globGenerator()), _k; _k = yield _j.next(), _a = _k.done, !_a; _h = true) {
+                _c = _k.value;
+                _h = false;
                 const file = _c;
                 writeDelegate(file);
-                if (!file.startsWith(`${githubWorkspace}${path.sep}`)) {
-                    writeDelegate(`Ignore '${file}' since it is not under GITHUB_WORKSPACE.`);
+                // Exclude matching patterns
+                if (isExcluded(file, excludePatterns)) {
+                    writeDelegate(`Exclude '${file}' (pattern match).`);
                     continue;
+                }
+                // Check if in roots
+                if (!isInRoots(file, roots)) {
+                    if (allowOutside) {
+                        writeDelegate(`Include '${file}' (outside roots, opt-in).`);
+                        // continue to hashing
+                    }
+                    else {
+                        writeDelegate(`Ignore '${file}' (outside roots, not opted-in).`);
+                        continue;
+                    }
                 }
                 if (fs.statSync(file).isDirectory()) {
                     writeDelegate(`Skip directory '${file}'.`);
@@ -8132,7 +8164,7 @@ function hashFiles(globber, currentWorkspace, verbose = false) {
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
         finally {
             try {
-                if (!_e && !_a && (_b = _f.return)) yield _b.call(_f);
+                if (!_h && !_a && (_b = _j.return)) yield _b.call(_j);
             }
             finally { if (e_1) throw e_1.error; }
         }
@@ -96463,8 +96495,24 @@ class PipCache extends cache_distributor_1.default {
     }
     computeKeys() {
         return __awaiter(this, void 0, void 0, function* () {
-            const hash = (yield glob.hashFiles(this.cacheDependencyPath)) ||
-                (yield glob.hashFiles(this.cacheDependencyBackupPath));
+            // Pass roots and allowFilesOutsideWorkspace to hashFiles
+            const hash = (yield glob.hashFiles(this.cacheDependencyPath, process.env.GITHUB_WORKSPACE || process.cwd(), // <-- currentWorkspace!
+            {
+                roots: [
+                    process.env['GITHUB_WORKSPACE'] || process.cwd(),
+                    process.env['GITHUB_ACTION_PATH'] || ''
+                ],
+                allowFilesOutsideWorkspace: true
+                // Optionally add exclude: ['*.log'] or from an input
+            })) ||
+                (yield glob.hashFiles(this.cacheDependencyBackupPath, process.env.GITHUB_WORKSPACE || process.cwd(), // <-- currentWorkspace
+                {
+                    roots: [
+                        process.env['GITHUB_WORKSPACE'] || process.cwd(),
+                        process.env['GITHUB_ACTION_PATH'] || ''
+                    ],
+                    allowFilesOutsideWorkspace: true
+                }));
             let primaryKey = '';
             let restoreKey = '';
             if (utils_1.IS_LINUX) {
@@ -96559,7 +96607,15 @@ class PipenvCache extends cache_distributor_1.default {
     }
     computeKeys() {
         return __awaiter(this, void 0, void 0, function* () {
-            const hash = yield glob.hashFiles(this.patterns);
+            // Pass workspace and options for advanced globbing/hashing
+            const hash = yield glob.hashFiles(this.patterns, process.env['GITHUB_WORKSPACE'] || process.cwd(), {
+                roots: [
+                    process.env['GITHUB_WORKSPACE'] || process.cwd(),
+                    process.env['GITHUB_ACTION_PATH'] || ''
+                ],
+                allowFilesOutsideWorkspace: true
+                // Optionally: exclude: ['*.log']
+            });
             const primaryKey = `${this.CACHE_KEY_PREFIX}-${process.env['RUNNER_OS']}-${process.arch}-python-${this.pythonVersion}-${this.packageManager}-${hash}`;
             const restoreKey = undefined;
             return {
@@ -96671,7 +96727,15 @@ class PoetryCache extends cache_distributor_1.default {
     }
     computeKeys() {
         return __awaiter(this, void 0, void 0, function* () {
-            const hash = yield glob.hashFiles(this.patterns);
+            // Pass workspace and advanced options for globbing/hashing
+            const hash = yield glob.hashFiles(this.patterns, process.env['GITHUB_WORKSPACE'] || process.cwd(), {
+                roots: [
+                    process.env['GITHUB_WORKSPACE'] || process.cwd(),
+                    process.env['GITHUB_ACTION_PATH'] || ''
+                ],
+                allowFilesOutsideWorkspace: true
+                // Optionally: exclude: ['*.log']
+            });
             // "v2" is here to invalidate old caches of this cache distributor, which were created broken:
             const primaryKey = `${this.CACHE_KEY_PREFIX}-${process.env['RUNNER_OS']}-${process.arch}-python-${this.pythonVersion}-${this.packageManager}-v2-${hash}`;
             const restoreKey = undefined;

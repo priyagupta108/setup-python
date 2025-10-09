@@ -59,9 +59,32 @@ class PipCache extends CacheDistributor {
   }
 
   protected async computeKeys() {
+    // Pass roots and allowFilesOutsideWorkspace to hashFiles
     const hash =
-      (await glob.hashFiles(this.cacheDependencyPath)) ||
-      (await glob.hashFiles(this.cacheDependencyBackupPath));
+      (await glob.hashFiles(
+        this.cacheDependencyPath,
+        process.env.GITHUB_WORKSPACE || process.cwd(), // <-- currentWorkspace!
+        {
+          roots: [
+            process.env['GITHUB_WORKSPACE'] || process.cwd(),
+            process.env['GITHUB_ACTION_PATH'] || ''
+          ],
+          allowFilesOutsideWorkspace: true
+          // Optionally add exclude: ['*.log'] or from an input
+        }
+      )) ||
+      (await glob.hashFiles(
+        this.cacheDependencyBackupPath,
+        process.env.GITHUB_WORKSPACE || process.cwd(), // <-- currentWorkspace
+        {
+          roots: [
+            process.env['GITHUB_WORKSPACE'] || process.cwd(),
+            process.env['GITHUB_ACTION_PATH'] || ''
+          ],
+          allowFilesOutsideWorkspace: true
+        }
+      ));
+
     let primaryKey = '';
     let restoreKey = '';
 

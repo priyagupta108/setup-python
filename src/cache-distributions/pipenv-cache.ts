@@ -31,7 +31,19 @@ class PipenvCache extends CacheDistributor {
   }
 
   protected async computeKeys() {
-    const hash = await glob.hashFiles(this.patterns);
+    // Pass workspace and options for advanced globbing/hashing
+    const hash = await glob.hashFiles(
+      this.patterns,
+      process.env['GITHUB_WORKSPACE'] || process.cwd(),
+      {
+        roots: [
+          process.env['GITHUB_WORKSPACE'] || process.cwd(),
+          process.env['GITHUB_ACTION_PATH'] || ''
+        ],
+        allowFilesOutsideWorkspace: true
+        // Optionally: exclude: ['*.log']
+      }
+    );
     const primaryKey = `${this.CACHE_KEY_PREFIX}-${process.env['RUNNER_OS']}-${process.arch}-python-${this.pythonVersion}-${this.packageManager}-${hash}`;
     const restoreKey = undefined;
     return {
