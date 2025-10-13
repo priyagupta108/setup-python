@@ -58,32 +58,39 @@ class PipCache extends CacheDistributor {
     return [resolvedPath];
   }
 
+  /**
+   * Determine if a given path is inside the workspace.
+   */
+  private isInWorkspace(filePath: string, workspace: string): boolean {
+    // Normalize both paths
+    const resolvedFilePath = path.resolve(workspace, filePath);
+    const resolvedWorkspace = path.resolve(workspace);
+    return resolvedFilePath.startsWith(resolvedWorkspace);
+  }
+
   protected async computeKeys() {
-    // Pass roots and allowFilesOutsideWorkspace to hashFiles
+    const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
+    const actionPath = process.env.GITHUB_ACTION_PATH || '';
+
+    let roots: string[] = [workspace];
+    let allowFilesOutsideWorkspace = false;
+
+    // Use roots/actionPath only if the dependency path is outside workspace
+    if (!this.isInWorkspace(this.cacheDependencyPath, workspace)) {
+      roots = [workspace, actionPath];
+      allowFilesOutsideWorkspace = true;
+    }
+
     const hash =
-      (await glob.hashFiles(
-        this.cacheDependencyPath,
-        process.env.GITHUB_WORKSPACE || process.cwd(), // <-- currentWorkspace!
-        {
-          roots: [
-            process.env['GITHUB_WORKSPACE'] || process.cwd(),
-            process.env['GITHUB_ACTION_PATH'] || ''
-          ],
-          allowFilesOutsideWorkspace: true
-          // Optionally add exclude: ['*.log'] or from an input
-        }
-      )) ||
-      (await glob.hashFiles(
-        this.cacheDependencyBackupPath,
-        process.env.GITHUB_WORKSPACE || process.cwd(), // <-- currentWorkspace
-        {
-          roots: [
-            process.env['GITHUB_WORKSPACE'] || process.cwd(),
-            process.env['GITHUB_ACTION_PATH'] || ''
-          ],
-          allowFilesOutsideWorkspace: true
-        }
-      ));
+      (await glob.hashFiles(this.cacheDependencyPath, workspace, {
+        roots,
+        allowFilesOutsideWorkspace
+        // Optionally add exclude: ['*.log'] or from an input
+      })) ||
+      (await glob.hashFiles(this.cacheDependencyBackupPath, workspace, {
+        roots,
+        allowFilesOutsideWorkspace
+      }));
 
     let primaryKey = '';
     let restoreKey = '';

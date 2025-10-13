@@ -44,20 +44,34 @@ class PoetryCache extends CacheDistributor {
     return [...paths];
   }
 
+  /**
+   * Determine if a given path is inside the workspace.
+   */
+  private isInWorkspace(filePath: string, workspace: string): boolean {
+    // Normalize both paths
+    const resolvedFilePath = path.resolve(workspace, filePath);
+    const resolvedWorkspace = path.resolve(workspace);
+    return resolvedFilePath.startsWith(resolvedWorkspace);
+  }
+
   protected async computeKeys() {
+    const workspace = process.env['GITHUB_WORKSPACE'] || process.cwd();
+    const actionPath = process.env['GITHUB_ACTION_PATH'] || '';
+
+    let roots: string[] = [workspace];
+    let allowFilesOutsideWorkspace = false;
+
+    if (!this.isInWorkspace(this.patterns, workspace)) {
+      roots = [workspace, actionPath];
+      allowFilesOutsideWorkspace = true;
+    }
+
     // Pass workspace and advanced options for globbing/hashing
-    const hash = await glob.hashFiles(
-      this.patterns,
-      process.env['GITHUB_WORKSPACE'] || process.cwd(),
-      {
-        roots: [
-          process.env['GITHUB_WORKSPACE'] || process.cwd(),
-          process.env['GITHUB_ACTION_PATH'] || ''
-        ],
-        allowFilesOutsideWorkspace: true
-        // Optionally: exclude: ['*.log']
-      }
-    );
+    const hash = await glob.hashFiles(this.patterns, workspace, {
+      roots,
+      allowFilesOutsideWorkspace
+      // Optionally: exclude: ['*.log']
+    });
     // "v2" is here to invalidate old caches of this cache distributor, which were created broken:
     const primaryKey = `${this.CACHE_KEY_PREFIX}-${process.env['RUNNER_OS']}-${process.arch}-python-${this.pythonVersion}-${this.packageManager}-v2-${hash}`;
     const restoreKey = undefined;

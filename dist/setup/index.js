@@ -96493,25 +96493,34 @@ class PipCache extends cache_distributor_1.default {
             return [resolvedPath];
         });
     }
+    /**
+     * Determine if a given path is inside the workspace.
+     */
+    isInWorkspace(filePath, workspace) {
+        // Normalize both paths
+        const resolvedFilePath = path.resolve(workspace, filePath);
+        const resolvedWorkspace = path.resolve(workspace);
+        return resolvedFilePath.startsWith(resolvedWorkspace);
+    }
     computeKeys() {
         return __awaiter(this, void 0, void 0, function* () {
-            // Pass roots and allowFilesOutsideWorkspace to hashFiles
-            const hash = (yield glob.hashFiles(this.cacheDependencyPath, process.env.GITHUB_WORKSPACE || process.cwd(), // <-- currentWorkspace!
-            {
-                roots: [
-                    process.env['GITHUB_WORKSPACE'] || process.cwd(),
-                    process.env['GITHUB_ACTION_PATH'] || ''
-                ],
-                allowFilesOutsideWorkspace: true
+            const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
+            const actionPath = process.env.GITHUB_ACTION_PATH || '';
+            let roots = [workspace];
+            let allowFilesOutsideWorkspace = false;
+            // Use roots/actionPath only if the dependency path is outside workspace
+            if (!this.isInWorkspace(this.cacheDependencyPath, workspace)) {
+                roots = [workspace, actionPath];
+                allowFilesOutsideWorkspace = true;
+            }
+            const hash = (yield glob.hashFiles(this.cacheDependencyPath, workspace, {
+                roots,
+                allowFilesOutsideWorkspace
                 // Optionally add exclude: ['*.log'] or from an input
             })) ||
-                (yield glob.hashFiles(this.cacheDependencyBackupPath, process.env.GITHUB_WORKSPACE || process.cwd(), // <-- currentWorkspace
-                {
-                    roots: [
-                        process.env['GITHUB_WORKSPACE'] || process.cwd(),
-                        process.env['GITHUB_ACTION_PATH'] || ''
-                    ],
-                    allowFilesOutsideWorkspace: true
+                (yield glob.hashFiles(this.cacheDependencyBackupPath, workspace, {
+                    roots,
+                    allowFilesOutsideWorkspace
                 }));
             let primaryKey = '';
             let restoreKey = '';
@@ -96605,15 +96614,29 @@ class PipenvCache extends cache_distributor_1.default {
             return [resolvedPath];
         });
     }
+    /**
+     * Determine if a given path is inside the workspace.
+     */
+    isInWorkspace(filePath, workspace) {
+        // Normalize both paths
+        const resolvedFilePath = path.resolve(workspace, filePath);
+        const resolvedWorkspace = path.resolve(workspace);
+        return resolvedFilePath.startsWith(resolvedWorkspace);
+    }
     computeKeys() {
         return __awaiter(this, void 0, void 0, function* () {
+            const workspace = process.env['GITHUB_WORKSPACE'] || process.cwd();
+            const actionPath = process.env['GITHUB_ACTION_PATH'] || '';
+            let roots = [workspace];
+            let allowFilesOutsideWorkspace = false;
+            if (!this.isInWorkspace(this.patterns, workspace)) {
+                roots = [workspace, actionPath];
+                allowFilesOutsideWorkspace = true;
+            }
             // Pass workspace and options for advanced globbing/hashing
-            const hash = yield glob.hashFiles(this.patterns, process.env['GITHUB_WORKSPACE'] || process.cwd(), {
-                roots: [
-                    process.env['GITHUB_WORKSPACE'] || process.cwd(),
-                    process.env['GITHUB_ACTION_PATH'] || ''
-                ],
-                allowFilesOutsideWorkspace: true
+            const hash = yield glob.hashFiles(this.patterns, workspace, {
+                roots,
+                allowFilesOutsideWorkspace
                 // Optionally: exclude: ['*.log']
             });
             const primaryKey = `${this.CACHE_KEY_PREFIX}-${process.env['RUNNER_OS']}-${process.arch}-python-${this.pythonVersion}-${this.packageManager}-${hash}`;
@@ -96725,15 +96748,29 @@ class PoetryCache extends cache_distributor_1.default {
             return [...paths];
         });
     }
+    /**
+     * Determine if a given path is inside the workspace.
+     */
+    isInWorkspace(filePath, workspace) {
+        // Normalize both paths
+        const resolvedFilePath = path.resolve(workspace, filePath);
+        const resolvedWorkspace = path.resolve(workspace);
+        return resolvedFilePath.startsWith(resolvedWorkspace);
+    }
     computeKeys() {
         return __awaiter(this, void 0, void 0, function* () {
+            const workspace = process.env['GITHUB_WORKSPACE'] || process.cwd();
+            const actionPath = process.env['GITHUB_ACTION_PATH'] || '';
+            let roots = [workspace];
+            let allowFilesOutsideWorkspace = false;
+            if (!this.isInWorkspace(this.patterns, workspace)) {
+                roots = [workspace, actionPath];
+                allowFilesOutsideWorkspace = true;
+            }
             // Pass workspace and advanced options for globbing/hashing
-            const hash = yield glob.hashFiles(this.patterns, process.env['GITHUB_WORKSPACE'] || process.cwd(), {
-                roots: [
-                    process.env['GITHUB_WORKSPACE'] || process.cwd(),
-                    process.env['GITHUB_ACTION_PATH'] || ''
-                ],
-                allowFilesOutsideWorkspace: true
+            const hash = yield glob.hashFiles(this.patterns, workspace, {
+                roots,
+                allowFilesOutsideWorkspace
                 // Optionally: exclude: ['*.log']
             });
             // "v2" is here to invalidate old caches of this cache distributor, which were created broken:
