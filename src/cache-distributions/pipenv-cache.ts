@@ -2,8 +2,8 @@ import * as glob from '@actions/glob';
 import * as os from 'os';
 import * as path from 'path';
 import * as core from '@actions/core';
-
 import CacheDistributor from './cache-distributor';
+import {isInWorkspace} from '../utils';
 
 class PipenvCache extends CacheDistributor {
   constructor(
@@ -30,16 +30,6 @@ class PipenvCache extends CacheDistributor {
     return [resolvedPath];
   }
 
-  /**
-   * Determine if a given path is inside the workspace.
-   */
-  private isInWorkspace(filePath: string, workspace: string): boolean {
-    // Normalize both paths
-    const resolvedFilePath = path.resolve(workspace, filePath);
-    const resolvedWorkspace = path.resolve(workspace);
-    return resolvedFilePath.startsWith(resolvedWorkspace);
-  }
-
   protected async computeKeys() {
     const workspace = process.env['GITHUB_WORKSPACE'] || process.cwd();
     const actionPath = process.env['GITHUB_ACTION_PATH'] || '';
@@ -47,8 +37,12 @@ class PipenvCache extends CacheDistributor {
     let roots: string[] = [workspace];
     let allowFilesOutsideWorkspace = false;
 
-    if (!this.isInWorkspace(this.patterns, workspace)) {
-      roots = [workspace, actionPath];
+    // Only add actionPath if patterns are truly outside workspace
+    if (!isInWorkspace(this.patterns, workspace)) {
+      roots = [workspace];
+      if (actionPath) {
+        roots.push(actionPath);
+      }
       allowFilesOutsideWorkspace = true;
     }
 

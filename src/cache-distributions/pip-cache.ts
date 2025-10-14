@@ -7,7 +7,7 @@ import * as path from 'path';
 import os from 'os';
 
 import CacheDistributor from './cache-distributor';
-import {getLinuxInfo, IS_LINUX, IS_WINDOWS} from '../utils';
+import {getLinuxInfo, IS_LINUX, IS_WINDOWS, isInWorkspace} from '../utils';
 import {CACHE_DEPENDENCY_BACKUP_PATH} from './constants';
 
 class PipCache extends CacheDistributor {
@@ -58,16 +58,6 @@ class PipCache extends CacheDistributor {
     return [resolvedPath];
   }
 
-  /**
-   * Determine if a given path is inside the workspace.
-   */
-  private isInWorkspace(filePath: string, workspace: string): boolean {
-    // Normalize both paths
-    const resolvedFilePath = path.resolve(workspace, filePath);
-    const resolvedWorkspace = path.resolve(workspace);
-    return resolvedFilePath.startsWith(resolvedWorkspace);
-  }
-
   protected async computeKeys() {
     const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
     const actionPath = process.env.GITHUB_ACTION_PATH || '';
@@ -75,9 +65,12 @@ class PipCache extends CacheDistributor {
     let roots: string[] = [workspace];
     let allowFilesOutsideWorkspace = false;
 
-    // Use roots/actionPath only if the dependency path is outside workspace
-    if (!this.isInWorkspace(this.cacheDependencyPath, workspace)) {
-      roots = [workspace, actionPath];
+    // Only add actionPath if dependency is truly outside workspace
+    if (!isInWorkspace(this.cacheDependencyPath, workspace)) {
+      roots = [workspace];
+      if (actionPath) {
+        roots.push(actionPath);
+      }
       allowFilesOutsideWorkspace = true;
     }
 
