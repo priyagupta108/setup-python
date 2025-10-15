@@ -50487,14 +50487,12 @@ class PipCache extends cache_distributor_1.default {
     async computeKeys() {
         const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
         const actionPath = process.env.GITHUB_ACTION_PATH || '';
+        // Toolkit's hashFiles handles path validation and symlink protection
+        // Set roots to workspace and actionPath, allowFilesOutsideWorkspace true if actionPath present
         let roots = [workspace];
         let allowFilesOutsideWorkspace = false;
-        // Only add actionPath if dependency is truly outside workspace
-        if (!(0, utils_1.isInWorkspace)(this.cacheDependencyPath, workspace)) {
-            roots = [workspace];
-            if (actionPath) {
-                roots.push(actionPath);
-            }
+        if (actionPath) {
+            roots.push(actionPath);
             allowFilesOutsideWorkspace = true;
         }
         const hash = (await glob.hashFiles(this.cacheDependencyPath, workspace, {
@@ -50575,7 +50573,6 @@ const os = __importStar(__nccwpck_require__(70857));
 const path = __importStar(__nccwpck_require__(16928));
 const core = __importStar(__nccwpck_require__(37484));
 const cache_distributor_1 = __importDefault(__nccwpck_require__(92326));
-const utils_1 = __nccwpck_require__(71798);
 class PipenvCache extends cache_distributor_1.default {
     constructor(pythonVersion, patterns = '**/Pipfile.lock') {
         super('pipenv', patterns);
@@ -50600,14 +50597,11 @@ class PipenvCache extends cache_distributor_1.default {
     async computeKeys() {
         const workspace = process.env['GITHUB_WORKSPACE'] || process.cwd();
         const actionPath = process.env['GITHUB_ACTION_PATH'] || '';
+        // Set roots to workspace and actionPath, allowFilesOutsideWorkspace true if actionPath present
         let roots = [workspace];
         let allowFilesOutsideWorkspace = false;
-        // Only add actionPath if patterns are truly outside workspace
-        if (!(0, utils_1.isInWorkspace)(this.patterns, workspace)) {
-            roots = [workspace];
-            if (actionPath) {
-                roots.push(actionPath);
-            }
+        if (actionPath) {
+            roots.push(actionPath);
             allowFilesOutsideWorkspace = true;
         }
         // Pass workspace and options for advanced globbing/hashing
@@ -50706,14 +50700,11 @@ class PoetryCache extends cache_distributor_1.default {
     async computeKeys() {
         const workspace = process.env['GITHUB_WORKSPACE'] || process.cwd();
         const actionPath = process.env['GITHUB_ACTION_PATH'] || '';
+        // Set roots to workspace and actionPath, allowFilesOutsideWorkspace true if actionPath present
         let roots = [workspace];
         let allowFilesOutsideWorkspace = false;
-        // Only add actionPath if patterns are truly outside workspace
-        if (!(0, utils_1.isInWorkspace)(this.patterns, workspace)) {
-            roots = [workspace];
-            if (actionPath) {
-                roots.push(actionPath);
-            }
+        if (actionPath) {
+            roots.push(actionPath);
             allowFilesOutsideWorkspace = true;
         }
         // Pass workspace and advanced options for globbing/hashing
@@ -52143,7 +52134,6 @@ exports.getVersionInputFromFile = getVersionInputFromFile;
 exports.getBinaryDirectory = getBinaryDirectory;
 exports.getNextPageUrl = getNextPageUrl;
 exports.getDownloadFileName = getDownloadFileName;
-exports.isInWorkspace = isInWorkspace;
 /* eslint no-unsafe-finally: "off" */
 const cache = __importStar(__nccwpck_require__(5116));
 const core = __importStar(__nccwpck_require__(37484));
@@ -52480,18 +52470,6 @@ function getDownloadFileName(downloadUrl) {
     return exports.IS_WINDOWS
         ? path.join(tempDir, path.basename(downloadUrl))
         : undefined;
-}
-/**
- * Determine if a given file path is inside the workspace root.
- * Symlink safe: uses absolute paths, trailing separator for strict match.
- */
-function isInWorkspace(filePath, workspace) {
-    const resolvedFilePath = path.resolve(filePath);
-    let resolvedWorkspace = path.resolve(workspace);
-    if (!resolvedWorkspace.endsWith(path.sep)) {
-        resolvedWorkspace += path.sep;
-    }
-    return resolvedFilePath.startsWith(resolvedWorkspace);
 }
 
 

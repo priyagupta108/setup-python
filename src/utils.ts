@@ -422,16 +422,3 @@ export function getDownloadFileName(downloadUrl: string): string | undefined {
     ? path.join(tempDir, path.basename(downloadUrl))
     : undefined;
 }
-
-/**
- * Determine if a given file path is inside the workspace root.
- * Symlink safe: uses absolute paths, trailing separator for strict match.
- */
-export function isInWorkspace(filePath: string, workspace: string): boolean {
-  const resolvedFilePath = path.resolve(filePath);
-  let resolvedWorkspace = path.resolve(workspace);
-  if (!resolvedWorkspace.endsWith(path.sep)) {
-    resolvedWorkspace += path.sep;
-  }
-  return resolvedFilePath.startsWith(resolvedWorkspace);
-}

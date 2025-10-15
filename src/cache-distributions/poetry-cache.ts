@@ -5,7 +5,7 @@ import * as exec from '@actions/exec';
 import * as core from '@actions/core';
 
 import CacheDistributor from './cache-distributor';
-import {isInWorkspace, logWarning} from '../utils';
+import {logWarning} from '../utils';
 
 class PoetryCache extends CacheDistributor {
   constructor(
@@ -48,15 +48,11 @@ class PoetryCache extends CacheDistributor {
     const workspace = process.env['GITHUB_WORKSPACE'] || process.cwd();
     const actionPath = process.env['GITHUB_ACTION_PATH'] || '';
 
+    // Set roots to workspace and actionPath, allowFilesOutsideWorkspace true if actionPath present
     let roots: string[] = [workspace];
     let allowFilesOutsideWorkspace = false;
-
-    // Only add actionPath if patterns are truly outside workspace
-    if (!isInWorkspace(this.patterns, workspace)) {
-      roots = [workspace];
-      if (actionPath) {
-        roots.push(actionPath);
-      }
+    if (actionPath) {
+      roots.push(actionPath);
       allowFilesOutsideWorkspace = true;
     }
 

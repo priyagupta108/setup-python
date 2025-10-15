@@ -7,7 +7,7 @@ import * as path from 'path';
 import os from 'os';
 
 import CacheDistributor from './cache-distributor';
-import {getLinuxInfo, IS_LINUX, IS_WINDOWS, isInWorkspace} from '../utils';
+import {getLinuxInfo, IS_LINUX, IS_WINDOWS} from '../utils';
 import {CACHE_DEPENDENCY_BACKUP_PATH} from './constants';
 
 class PipCache extends CacheDistributor {
@@ -62,15 +62,11 @@ class PipCache extends CacheDistributor {
     const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
     const actionPath = process.env.GITHUB_ACTION_PATH || '';
 
+    // Set roots to workspace and actionPath, allowFilesOutsideWorkspace true if actionPath present
     let roots: string[] = [workspace];
     let allowFilesOutsideWorkspace = false;
-
-    // Only add actionPath if dependency is truly outside workspace
-    if (!isInWorkspace(this.cacheDependencyPath, workspace)) {
-      roots = [workspace];
-      if (actionPath) {
-        roots.push(actionPath);
-      }
+    if (actionPath) {
+      roots.push(actionPath);
       allowFilesOutsideWorkspace = true;
     }
 
