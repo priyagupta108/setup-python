@@ -50487,7 +50487,6 @@ class PipCache extends cache_distributor_1.default {
     async computeKeys() {
         const workspace = process.env.GITHUB_WORKSPACE || process.cwd();
         const actionPath = process.env.GITHUB_ACTION_PATH || '';
-        // Toolkit's hashFiles handles path validation and symlink protection
         // Set roots to workspace and actionPath, allowFilesOutsideWorkspace true if actionPath present
         let roots = [workspace];
         let allowFilesOutsideWorkspace = false;
