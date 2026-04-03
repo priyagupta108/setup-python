@@ -4,6 +4,7 @@ import * as finderPyPy from './find-pypy.js';
 import * as finderGraalPy from './find-graalpy.js';
 import * as path from 'path';
 import * as os from 'os';
+import {fileURLToPath} from 'url';
 import fs from 'fs';
 import {getCacheDistributor} from './cache-distributions/cache-factory.js';
 import {
@@ -168,7 +169,11 @@ async function run() {
         'The `python-version` input is not set.  The version of Python currently in `PATH` will be used.'
       );
     }
-    const matchersPath = path.join(__dirname, '../..', '.github');
+    const matchersPath = path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../..',
+      '.github'
+    );
     core.info(`##[add-matcher]${path.join(matchersPath, 'python.json')}`);
   } catch (err) {
     core.setFailed((err as Error).message);

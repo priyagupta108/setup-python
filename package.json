@@ -15,7 +15,7 @@
     "lint": "eslint \"**/*.ts\"",
     "lint:fix": "eslint \"**/*.ts\" --fix",
     "release": "ncc build -o dist/setup src/setup-python.ts && ncc build -o dist/cache-save src/cache-save.ts && git add -f dist/",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand --coverage"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand --coverage"
   },
   "repository": {
     "type": "git",

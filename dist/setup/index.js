@@ -90922,6 +90922,7 @@ function getCacheDistributor(packageManager, pythonVersion, cacheDependencyPath)
 
 
 
+
 function isPyPyVersion(versionSpec) {
     return versionSpec.startsWith('pypy');
 }
@@ -91031,7 +91032,7 @@ async function run() {
         else {
             warning('The `python-version` input is not set.  The version of Python currently in `PATH` will be used.');
         }
-        const matchersPath = external_path_.join(__dirname, '../..', '.github');
+        const matchersPath = external_path_.join(external_path_.dirname((0,external_url_.fileURLToPath)(import.meta.url)), '../..', '.github');
         info(`##[add-matcher]${external_path_.join(matchersPath, 'python.json')}`);
     }
     catch (err) {
