@@ -2,9 +2,9 @@ import * as path from 'path';
 import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
 import * as exec from '@actions/exec';
+import {ExecOptions} from '@actions/exec';
 import * as httpm from '@actions/http-client';
-import {ExecOptions} from '@actions/exec/lib/interfaces';
-import {IS_WINDOWS, IS_LINUX, getDownloadFileName} from './utils';
+import {IS_WINDOWS, IS_LINUX, getDownloadFileName} from './utils.js';
 import {IToolRelease} from '@actions/tool-cache';
 
 const TOKEN = core.getInput('token');
