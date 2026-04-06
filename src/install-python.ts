@@ -100,6 +100,7 @@ async function installPython(workingDirectory: string) {
     cwd: workingDirectory,
     env: {
       ...process.env,
+      PIP_ROOT_USER_ACTION: 'ignore', 
       ...(IS_LINUX && {LD_LIBRARY_PATH: path.join(workingDirectory, 'lib')})
     },
     silent: true,
