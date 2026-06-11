@@ -56,7 +56,6 @@ function findRhelRelease(
     core.debug(`check ${version} satisfies ${semanticVersionSpec}`);
 
     if (!semver.satisfies(version, semanticVersionSpec)) continue;
-    if (!candidate.stable) continue;
 
     const file = candidate.files.find(item => {
       core.debug(

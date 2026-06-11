@@ -55488,8 +55488,6 @@ function findRhelRelease(semanticVersionSpec, architecture, manifest, osVersion)
         core.debug(`check ${version} satisfies ${semanticVersionSpec}`);
         if (!semver.satisfies(version, semanticVersionSpec))
             continue;
-        if (!candidate.stable)
-            continue;
         const file = candidate.files.find(item => {
             core.debug(`${item.arch}===${architecture} && ${item.platform}===rhel && ${item.platform_version}===${osVersion}`);
             const archMatch = item.arch === architecture;
@@ -55978,23 +55976,29 @@ async function getMacOSInfo() {
     return { osName: 'macOS', osVersion: macOSVersion };
 }
 async function getLinuxInfo() {
-    let osName;
-    let osVersion;
     try {
         const { stdout } = await exec.getExecOutput('lsb_release', ['-i', '-r', '-s'], {
             silent: true
         });
-        [osName, osVersion] = stdout.trim().split('\n');
+        const [osName, osVersion] = stdout.trim().split('\n');
+        core.debug(`OS Name: ${osName}, Version: ${osVersion}`);
+        return { osName, osVersion };
     }
     catch {
-        // Fallback to /etc/os-release for distros without lsb_release (e.g., RHEL)
-        const { stdout } = await exec.getExecOutput('bash', ['-c', 'source /etc/os-release && echo "$ID" && echo "$VERSION_ID"'], {
-            silent: true
+        core.debug('lsb_release command not found. Falling back to /etc/os-release.');
+        const osReleaseContent = fs_1.default.readFileSync('/etc/os-release', 'utf8');
+        const osInfo = {};
+        osReleaseContent.split('\n').forEach(line => {
+            const [key, value] = line.split('=');
+            if (key && value) {
+                osInfo[key.trim()] = value.trim().replace(/"/g, '');
+            }
         });
-        [osName, osVersion] = stdout.trim().split('\n');
+        const osName = osInfo['ID'] || 'Linux';
+        const osVersion = osInfo['VERSION_ID'] || '';
+        core.debug(`OS Name: ${osName}, Version: ${osVersion}`);
+        return { osName, osVersion };
     }
-    core.debug(`OS Name: ${osName}, Version: ${osVersion}`);
-    return { osName: osName, osVersion: osVersion };
 }
 async function getOSInfo() {
     let osInfo;
