@@ -75,3 +75,47 @@ describe('getManifestFromURL', () => {
     );
   });
 });
+
+describe('getManifest validation and retry', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('should retry the URL with backoff and succeed', async () => {
+    (tc.getManifestFromRepo as jest.Mock).mockRejectedValue(
+      new Error('API failed')
+    );
+    (httpm.HttpClient.prototype.getJson as jest.Mock)
+      .mockResolvedValueOnce({result: null})
+      .mockResolvedValueOnce({result: mockManifest});
+
+    const promise = getManifest();
+    await jest.runAllTimersAsync();
+
+    await expect(promise).resolves.toEqual(mockManifest);
+    expect(httpm.HttpClient.prototype.getJson).toHaveBeenCalledTimes(2);
+  });
+
+  it('should fail loudly when all manifest sources are exhausted', async () => {
+    (tc.getManifestFromRepo as jest.Mock).mockRejectedValue(
+      new Error('API failed')
+    );
+    (httpm.HttpClient.prototype.getJson as jest.Mock).mockResolvedValue({
+      result: null
+    });
+
+    const promise = getManifest();
+    const assertion = expect(promise).rejects.toThrow(
+      'Manifest fetch/parse failed'
+    );
+    await jest.runAllTimersAsync();
+
+    await assertion;
+    expect(httpm.HttpClient.prototype.getJson).toHaveBeenCalledTimes(3);
+  });
+});
