@@ -173,11 +173,29 @@ async function getMacOSInfo() {
 }
 
 export async function getLinuxInfo() {
-  const {stdout} = await exec.getExecOutput('lsb_release', ['-i', '-r', '-s'], {
-    silent: true
-  });
+  let osName: string;
+  let osVersion: string;
 
-  const [osName, osVersion] = stdout.trim().split('\n');
+  try {
+    const {stdout} = await exec.getExecOutput(
+      'lsb_release',
+      ['-i', '-r', '-s'],
+      {
+        silent: true
+      }
+    );
+    [osName, osVersion] = stdout.trim().split('\n');
+  } catch {
+    // Fallback to /etc/os-release for distros without lsb_release (e.g., RHEL)
+    const {stdout} = await exec.getExecOutput(
+      'bash',
+      ['-c', 'source /etc/os-release && echo "$ID" && echo "$VERSION_ID"'],
+      {
+        silent: true
+      }
+    );
+    [osName, osVersion] = stdout.trim().split('\n');
+  }
 
   core.debug(`OS Name: ${osName}, Version: ${osVersion}`);
 
