@@ -1,6 +1,2176 @@
 import { createRequire as __WEBPACK_EXTERNAL_createRequire } from "module";
 /******/ var __webpack_modules__ = ({
 
+/***/ 8557:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+const f = __nccwpck_require__(9470)
+const DateTime = global.Date
+
+class Date extends DateTime {
+  constructor (value) {
+    super(value)
+    this.isDate = true
+  }
+  toISOString () {
+    return `${this.getUTCFullYear()}-${f(2, this.getUTCMonth() + 1)}-${f(2, this.getUTCDate())}`
+  }
+}
+
+module.exports = value => {
+  const date = new Date(value)
+  /* istanbul ignore if */
+  if (isNaN(date)) {
+    throw new TypeError('Invalid Datetime')
+  } else {
+    return date
+  }
+}
+
+
+/***/ }),
+
+/***/ 9487:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+const f = __nccwpck_require__(9470)
+
+class FloatingDateTime extends Date {
+  constructor (value) {
+    super(value + 'Z')
+    this.isFloating = true
+  }
+  toISOString () {
+    const date = `${this.getUTCFullYear()}-${f(2, this.getUTCMonth() + 1)}-${f(2, this.getUTCDate())}`
+    const time = `${f(2, this.getUTCHours())}:${f(2, this.getUTCMinutes())}:${f(2, this.getUTCSeconds())}.${f(3, this.getUTCMilliseconds())}`
+    return `${date}T${time}`
+  }
+}
+
+module.exports = value => {
+  const date = new FloatingDateTime(value)
+  /* istanbul ignore if */
+  if (isNaN(date)) {
+    throw new TypeError('Invalid Datetime')
+  } else {
+    return date
+  }
+}
+
+
+/***/ }),
+
+/***/ 6376:
+/***/ ((module) => {
+
+
+module.exports = value => {
+  const date = new Date(value)
+  /* istanbul ignore if */
+  if (isNaN(date)) {
+    throw new TypeError('Invalid Datetime')
+  } else {
+    return date
+  }
+}
+
+
+/***/ }),
+
+/***/ 420:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+const f = __nccwpck_require__(9470)
+
+class Time extends Date {
+  constructor (value) {
+    super(`0000-01-01T${value}Z`)
+    this.isTime = true
+  }
+  toISOString () {
+    return `${f(2, this.getUTCHours())}:${f(2, this.getUTCMinutes())}:${f(2, this.getUTCSeconds())}.${f(3, this.getUTCMilliseconds())}`
+  }
+}
+
+module.exports = value => {
+  const date = new Time(value)
+  /* istanbul ignore if */
+  if (isNaN(date)) {
+    throw new TypeError('Invalid Datetime')
+  } else {
+    return date
+  }
+}
+
+
+/***/ }),
+
+/***/ 9470:
+/***/ ((module) => {
+
+
+module.exports = (d, num) => {
+  num = String(num)
+  while (num.length < d) num = '0' + num
+  return num
+}
+
+
+/***/ }),
+
+/***/ 5991:
+/***/ ((module) => {
+
+
+const ParserEND = 0x110000
+class ParserError extends Error {
+  /* istanbul ignore next */
+  constructor (msg, filename, linenumber) {
+    super('[ParserError] ' + msg, filename, linenumber)
+    this.name = 'ParserError'
+    this.code = 'ParserError'
+    if (Error.captureStackTrace) Error.captureStackTrace(this, ParserError)
+  }
+}
+class State {
+  constructor (parser) {
+    this.parser = parser
+    this.buf = ''
+    this.returned = null
+    this.result = null
+    this.resultTable = null
+    this.resultArr = null
+  }
+}
+class Parser {
+  constructor () {
+    this.pos = 0
+    this.col = 0
+    this.line = 0
+    this.obj = {}
+    this.ctx = this.obj
+    this.stack = []
+    this._buf = ''
+    this.char = null
+    this.ii = 0
+    this.state = new State(this.parseStart)
+  }
+
+  parse (str) {
+    /* istanbul ignore next */
+    if (str.length === 0 || str.length == null) return
+
+    this._buf = String(str)
+    this.ii = -1
+    this.char = -1
+    let getNext
+    while (getNext === false || this.nextChar()) {
+      getNext = this.runOne()
+    }
+    this._buf = null
+  }
+  nextChar () {
+    if (this.char === 0x0A) {
+      ++this.line
+      this.col = -1
+    }
+    ++this.ii
+    this.char = this._buf.codePointAt(this.ii)
+    ++this.pos
+    ++this.col
+    return this.haveBuffer()
+  }
+  haveBuffer () {
+    return this.ii < this._buf.length
+  }
+  runOne () {
+    return this.state.parser.call(this, this.state.returned)
+  }
+  finish () {
+    this.char = ParserEND
+    let last
+    do {
+      last = this.state.parser
+      this.runOne()
+    } while (this.state.parser !== last)
+
+    this.ctx = null
+    this.state = null
+    this._buf = null
+
+    return this.obj
+  }
+  next (fn) {
+    /* istanbul ignore next */
+    if (typeof fn !== 'function') throw new ParserError('Tried to set state to non-existent state: ' + JSON.stringify(fn))
+    this.state.parser = fn
+  }
+  goto (fn) {
+    this.next(fn)
+    return this.runOne()
+  }
+  call (fn, returnWith) {
+    if (returnWith) this.next(returnWith)
+    this.stack.push(this.state)
+    this.state = new State(fn)
+  }
+  callNow (fn, returnWith) {
+    this.call(fn, returnWith)
+    return this.runOne()
+  }
+  return (value) {
+    /* istanbul ignore next */
+    if (this.stack.length === 0) throw this.error(new ParserError('Stack underflow'))
+    if (value === undefined) value = this.state.buf
+    this.state = this.stack.pop()
+    this.state.returned = value
+  }
+  returnNow (value) {
+    this.return(value)
+    return this.runOne()
+  }
+  consume () {
+    /* istanbul ignore next */
+    if (this.char === ParserEND) throw this.error(new ParserError('Unexpected end-of-buffer'))
+    this.state.buf += this._buf[this.ii]
+  }
+  error (err) {
+    err.line = this.line
+    err.col = this.col
+    err.pos = this.pos
+    return err
+  }
+  /* istanbul ignore next */
+  parseStart () {
+    throw new ParserError('Must declare a parseStart method')
+  }
+}
+Parser.END = ParserEND
+Parser.Error = ParserError
+module.exports = Parser
+
+
+/***/ }),
+
+/***/ 2862:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+/* eslint-disable no-new-wrappers, no-eval, camelcase, operator-linebreak */
+module.exports = makeParserClass(__nccwpck_require__(5991))
+module.exports.makeParserClass = makeParserClass
+
+class TomlError extends Error {
+  constructor (msg) {
+    super(msg)
+    this.name = 'TomlError'
+    /* istanbul ignore next */
+    if (Error.captureStackTrace) Error.captureStackTrace(this, TomlError)
+    this.fromTOML = true
+    this.wrapped = null
+  }
+}
+TomlError.wrap = err => {
+  const terr = new TomlError(err.message)
+  terr.code = err.code
+  terr.wrapped = err
+  return terr
+}
+module.exports.TomlError = TomlError
+
+const createDateTime = __nccwpck_require__(6376)
+const createDateTimeFloat = __nccwpck_require__(9487)
+const createDate = __nccwpck_require__(8557)
+const createTime = __nccwpck_require__(420)
+
+const CTRL_I = 0x09
+const CTRL_J = 0x0A
+const CTRL_M = 0x0D
+const CTRL_CHAR_BOUNDARY = 0x1F // the last non-character in the latin1 region of unicode, except DEL
+const CHAR_SP = 0x20
+const CHAR_QUOT = 0x22
+const CHAR_NUM = 0x23
+const CHAR_APOS = 0x27
+const CHAR_PLUS = 0x2B
+const CHAR_COMMA = 0x2C
+const CHAR_HYPHEN = 0x2D
+const CHAR_PERIOD = 0x2E
+const CHAR_0 = 0x30
+const CHAR_1 = 0x31
+const CHAR_7 = 0x37
+const CHAR_9 = 0x39
+const CHAR_COLON = 0x3A
+const CHAR_EQUALS = 0x3D
+const CHAR_A = 0x41
+const CHAR_E = 0x45
+const CHAR_F = 0x46
+const CHAR_T = 0x54
+const CHAR_U = 0x55
+const CHAR_Z = 0x5A
+const CHAR_LOWBAR = 0x5F
+const CHAR_a = 0x61
+const CHAR_b = 0x62
+const CHAR_e = 0x65
+const CHAR_f = 0x66
+const CHAR_i = 0x69
+const CHAR_l = 0x6C
+const CHAR_n = 0x6E
+const CHAR_o = 0x6F
+const CHAR_r = 0x72
+const CHAR_s = 0x73
+const CHAR_t = 0x74
+const CHAR_u = 0x75
+const CHAR_x = 0x78
+const CHAR_z = 0x7A
+const CHAR_LCUB = 0x7B
+const CHAR_RCUB = 0x7D
+const CHAR_LSQB = 0x5B
+const CHAR_BSOL = 0x5C
+const CHAR_RSQB = 0x5D
+const CHAR_DEL = 0x7F
+const SURROGATE_FIRST = 0xD800
+const SURROGATE_LAST = 0xDFFF
+
+const escapes = {
+  [CHAR_b]: '\u0008',
+  [CHAR_t]: '\u0009',
+  [CHAR_n]: '\u000A',
+  [CHAR_f]: '\u000C',
+  [CHAR_r]: '\u000D',
+  [CHAR_QUOT]: '\u0022',
+  [CHAR_BSOL]: '\u005C'
+}
+
+function isDigit (cp) {
+  return cp >= CHAR_0 && cp <= CHAR_9
+}
+function isHexit (cp) {
+  return (cp >= CHAR_A && cp <= CHAR_F) || (cp >= CHAR_a && cp <= CHAR_f) || (cp >= CHAR_0 && cp <= CHAR_9)
+}
+function isBit (cp) {
+  return cp === CHAR_1 || cp === CHAR_0
+}
+function isOctit (cp) {
+  return (cp >= CHAR_0 && cp <= CHAR_7)
+}
+function isAlphaNumQuoteHyphen (cp) {
+  return (cp >= CHAR_A && cp <= CHAR_Z)
+      || (cp >= CHAR_a && cp <= CHAR_z)
+      || (cp >= CHAR_0 && cp <= CHAR_9)
+      || cp === CHAR_APOS
+      || cp === CHAR_QUOT
+      || cp === CHAR_LOWBAR
+      || cp === CHAR_HYPHEN
+}
+function isAlphaNumHyphen (cp) {
+  return (cp >= CHAR_A && cp <= CHAR_Z)
+      || (cp >= CHAR_a && cp <= CHAR_z)
+      || (cp >= CHAR_0 && cp <= CHAR_9)
+      || cp === CHAR_LOWBAR
+      || cp === CHAR_HYPHEN
+}
+const _type = Symbol('type')
+const _declared = Symbol('declared')
+
+const hasOwnProperty = Object.prototype.hasOwnProperty
+const defineProperty = Object.defineProperty
+const descriptor = {configurable: true, enumerable: true, writable: true, value: undefined}
+
+function hasKey (obj, key) {
+  if (hasOwnProperty.call(obj, key)) return true
+  if (key === '__proto__') defineProperty(obj, '__proto__', descriptor)
+  return false
+}
+
+const INLINE_TABLE = Symbol('inline-table')
+function InlineTable () {
+  return Object.defineProperties({}, {
+    [_type]: {value: INLINE_TABLE}
+  })
+}
+function isInlineTable (obj) {
+  if (obj === null || typeof (obj) !== 'object') return false
+  return obj[_type] === INLINE_TABLE
+}
+
+const TABLE = Symbol('table')
+function Table () {
+  return Object.defineProperties({}, {
+    [_type]: {value: TABLE},
+    [_declared]: {value: false, writable: true}
+  })
+}
+function isTable (obj) {
+  if (obj === null || typeof (obj) !== 'object') return false
+  return obj[_type] === TABLE
+}
+
+const _contentType = Symbol('content-type')
+const INLINE_LIST = Symbol('inline-list')
+function InlineList (type) {
+  return Object.defineProperties([], {
+    [_type]: {value: INLINE_LIST},
+    [_contentType]: {value: type}
+  })
+}
+function isInlineList (obj) {
+  if (obj === null || typeof (obj) !== 'object') return false
+  return obj[_type] === INLINE_LIST
+}
+
+const LIST = Symbol('list')
+function List () {
+  return Object.defineProperties([], {
+    [_type]: {value: LIST}
+  })
+}
+function isList (obj) {
+  if (obj === null || typeof (obj) !== 'object') return false
+  return obj[_type] === LIST
+}
+
+// in an eval, to let bundlers not slurp in a util proxy
+let _custom
+try {
+  const utilInspect = eval("require('util').inspect")
+  _custom = utilInspect.custom
+} catch (_) {
+  /* eval require not available in transpiled bundle */
+}
+/* istanbul ignore next */
+const _inspect = _custom || 'inspect'
+
+class BoxedBigInt {
+  constructor (value) {
+    try {
+      this.value = global.BigInt.asIntN(64, value)
+    } catch (_) {
+      /* istanbul ignore next */
+      this.value = null
+    }
+    Object.defineProperty(this, _type, {value: INTEGER})
+  }
+  isNaN () {
+    return this.value === null
+  }
+  /* istanbul ignore next */
+  toString () {
+    return String(this.value)
+  }
+  /* istanbul ignore next */
+  [_inspect] () {
+    return `[BigInt: ${this.toString()}]}`
+  }
+  valueOf () {
+    return this.value
+  }
+}
+
+const INTEGER = Symbol('integer')
+function Integer (value) {
+  let num = Number(value)
+  // -0 is a float thing, not an int thing
+  if (Object.is(num, -0)) num = 0
+  /* istanbul ignore else */
+  if (global.BigInt && !Number.isSafeInteger(num)) {
+    return new BoxedBigInt(value)
+  } else {
+    /* istanbul ignore next */
+    return Object.defineProperties(new Number(num), {
+      isNaN: {value: function () { return isNaN(this) }},
+      [_type]: {value: INTEGER},
+      [_inspect]: {value: () => `[Integer: ${value}]`}
+    })
+  }
+}
+function isInteger (obj) {
+  if (obj === null || typeof (obj) !== 'object') return false
+  return obj[_type] === INTEGER
+}
+
+const FLOAT = Symbol('float')
+function Float (value) {
+  /* istanbul ignore next */
+  return Object.defineProperties(new Number(value), {
+    [_type]: {value: FLOAT},
+    [_inspect]: {value: () => `[Float: ${value}]`}
+  })
+}
+function isFloat (obj) {
+  if (obj === null || typeof (obj) !== 'object') return false
+  return obj[_type] === FLOAT
+}
+
+function tomlType (value) {
+  const type = typeof value
+  if (type === 'object') {
+    /* istanbul ignore if */
+    if (value === null) return 'null'
+    if (value instanceof Date) return 'datetime'
+    /* istanbul ignore else */
+    if (_type in value) {
+      switch (value[_type]) {
+        case INLINE_TABLE: return 'inline-table'
+        case INLINE_LIST: return 'inline-list'
+        /* istanbul ignore next */
+        case TABLE: return 'table'
+        /* istanbul ignore next */
+        case LIST: return 'list'
+        case FLOAT: return 'float'
+        case INTEGER: return 'integer'
+      }
+    }
+  }
+  return type
+}
+
+function makeParserClass (Parser) {
+  class TOMLParser extends Parser {
+    constructor () {
+      super()
+      this.ctx = this.obj = Table()
+    }
+
+    /* MATCH HELPER */
+    atEndOfWord () {
+      return this.char === CHAR_NUM || this.char === CTRL_I || this.char === CHAR_SP || this.atEndOfLine()
+    }
+    atEndOfLine () {
+      return this.char === Parser.END || this.char === CTRL_J || this.char === CTRL_M
+    }
+
+    parseStart () {
+      if (this.char === Parser.END) {
+        return null
+      } else if (this.char === CHAR_LSQB) {
+        return this.call(this.parseTableOrList)
+      } else if (this.char === CHAR_NUM) {
+        return this.call(this.parseComment)
+      } else if (this.char === CTRL_J || this.char === CHAR_SP || this.char === CTRL_I || this.char === CTRL_M) {
+        return null
+      } else if (isAlphaNumQuoteHyphen(this.char)) {
+        return this.callNow(this.parseAssignStatement)
+      } else {
+        throw this.error(new TomlError(`Unknown character "${this.char}"`))
+      }
+    }
+
+    // HELPER, this strips any whitespace and comments to the end of the line
+    // then RETURNS. Last state in a production.
+    parseWhitespaceToEOL () {
+      if (this.char === CHAR_SP || this.char === CTRL_I || this.char === CTRL_M) {
+        return null
+      } else if (this.char === CHAR_NUM) {
+        return this.goto(this.parseComment)
+      } else if (this.char === Parser.END || this.char === CTRL_J) {
+        return this.return()
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected only whitespace or comments till end of line'))
+      }
+    }
+
+    /* ASSIGNMENT: key = value */
+    parseAssignStatement () {
+      return this.callNow(this.parseAssign, this.recordAssignStatement)
+    }
+    recordAssignStatement (kv) {
+      let target = this.ctx
+      let finalKey = kv.key.pop()
+      for (let kw of kv.key) {
+        if (hasKey(target, kw) && !isTable(target[kw])) {
+          throw this.error(new TomlError("Can't redefine existing key"))
+        }
+        target = target[kw] = target[kw] || Table()
+      }
+      if (hasKey(target, finalKey)) {
+        throw this.error(new TomlError("Can't redefine existing key"))
+      }
+      target[_declared] = true
+      // unbox our numbers
+      if (isInteger(kv.value) || isFloat(kv.value)) {
+        target[finalKey] = kv.value.valueOf()
+      } else {
+        target[finalKey] = kv.value
+      }
+      return this.goto(this.parseWhitespaceToEOL)
+    }
+
+    /* ASSSIGNMENT expression, key = value possibly inside an inline table */
+    parseAssign () {
+      return this.callNow(this.parseKeyword, this.recordAssignKeyword)
+    }
+    recordAssignKeyword (key) {
+      if (this.state.resultTable) {
+        this.state.resultTable.push(key)
+      } else {
+        this.state.resultTable = [key]
+      }
+      return this.goto(this.parseAssignKeywordPreDot)
+    }
+    parseAssignKeywordPreDot () {
+      if (this.char === CHAR_PERIOD) {
+        return this.next(this.parseAssignKeywordPostDot)
+      } else if (this.char !== CHAR_SP && this.char !== CTRL_I) {
+        return this.goto(this.parseAssignEqual)
+      }
+    }
+    parseAssignKeywordPostDot () {
+      if (this.char !== CHAR_SP && this.char !== CTRL_I) {
+        return this.callNow(this.parseKeyword, this.recordAssignKeyword)
+      }
+    }
+
+    parseAssignEqual () {
+      if (this.char === CHAR_EQUALS) {
+        return this.next(this.parseAssignPreValue)
+      } else {
+        throw this.error(new TomlError('Invalid character, expected "="'))
+      }
+    }
+    parseAssignPreValue () {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else {
+        return this.callNow(this.parseValue, this.recordAssignValue)
+      }
+    }
+    recordAssignValue (value) {
+      return this.returnNow({key: this.state.resultTable, value: value})
+    }
+
+    /* COMMENTS: #...eol */
+    parseComment () {
+      do {
+        if (this.char === Parser.END || this.char === CTRL_J) {
+          return this.return()
+        } else if (this.char === CHAR_DEL || (this.char <= CTRL_CHAR_BOUNDARY && this.char !== CTRL_I)) {
+          throw this.errorControlCharIn('comments')
+        }
+      } while (this.nextChar())
+    }
+
+    /* TABLES AND LISTS, [foo] and [[foo]] */
+    parseTableOrList () {
+      if (this.char === CHAR_LSQB) {
+        this.next(this.parseList)
+      } else {
+        return this.goto(this.parseTable)
+      }
+    }
+
+    /* TABLE [foo.bar.baz] */
+    parseTable () {
+      this.ctx = this.obj
+      return this.goto(this.parseTableNext)
+    }
+    parseTableNext () {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else {
+        return this.callNow(this.parseKeyword, this.parseTableMore)
+      }
+    }
+    parseTableMore (keyword) {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else if (this.char === CHAR_RSQB) {
+        if (hasKey(this.ctx, keyword) && (!isTable(this.ctx[keyword]) || this.ctx[keyword][_declared])) {
+          throw this.error(new TomlError("Can't redefine existing key"))
+        } else {
+          this.ctx = this.ctx[keyword] = this.ctx[keyword] || Table()
+          this.ctx[_declared] = true
+        }
+        return this.next(this.parseWhitespaceToEOL)
+      } else if (this.char === CHAR_PERIOD) {
+        if (!hasKey(this.ctx, keyword)) {
+          this.ctx = this.ctx[keyword] = Table()
+        } else if (isTable(this.ctx[keyword])) {
+          this.ctx = this.ctx[keyword]
+        } else if (isList(this.ctx[keyword])) {
+          this.ctx = this.ctx[keyword][this.ctx[keyword].length - 1]
+        } else {
+          throw this.error(new TomlError("Can't redefine existing key"))
+        }
+        return this.next(this.parseTableNext)
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected whitespace, . or ]'))
+      }
+    }
+
+    /* LIST [[a.b.c]] */
+    parseList () {
+      this.ctx = this.obj
+      return this.goto(this.parseListNext)
+    }
+    parseListNext () {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else {
+        return this.callNow(this.parseKeyword, this.parseListMore)
+      }
+    }
+    parseListMore (keyword) {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else if (this.char === CHAR_RSQB) {
+        if (!hasKey(this.ctx, keyword)) {
+          this.ctx[keyword] = List()
+        }
+        if (isInlineList(this.ctx[keyword])) {
+          throw this.error(new TomlError("Can't extend an inline array"))
+        } else if (isList(this.ctx[keyword])) {
+          const next = Table()
+          this.ctx[keyword].push(next)
+          this.ctx = next
+        } else {
+          throw this.error(new TomlError("Can't redefine an existing key"))
+        }
+        return this.next(this.parseListEnd)
+      } else if (this.char === CHAR_PERIOD) {
+        if (!hasKey(this.ctx, keyword)) {
+          this.ctx = this.ctx[keyword] = Table()
+        } else if (isInlineList(this.ctx[keyword])) {
+          throw this.error(new TomlError("Can't extend an inline array"))
+        } else if (isInlineTable(this.ctx[keyword])) {
+          throw this.error(new TomlError("Can't extend an inline table"))
+        } else if (isList(this.ctx[keyword])) {
+          this.ctx = this.ctx[keyword][this.ctx[keyword].length - 1]
+        } else if (isTable(this.ctx[keyword])) {
+          this.ctx = this.ctx[keyword]
+        } else {
+          throw this.error(new TomlError("Can't redefine an existing key"))
+        }
+        return this.next(this.parseListNext)
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected whitespace, . or ]'))
+      }
+    }
+    parseListEnd (keyword) {
+      if (this.char === CHAR_RSQB) {
+        return this.next(this.parseWhitespaceToEOL)
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected whitespace, . or ]'))
+      }
+    }
+
+    /* VALUE string, number, boolean, inline list, inline object */
+    parseValue () {
+      if (this.char === Parser.END) {
+        throw this.error(new TomlError('Key without value'))
+      } else if (this.char === CHAR_QUOT) {
+        return this.next(this.parseDoubleString)
+      } if (this.char === CHAR_APOS) {
+        return this.next(this.parseSingleString)
+      } else if (this.char === CHAR_HYPHEN || this.char === CHAR_PLUS) {
+        return this.goto(this.parseNumberSign)
+      } else if (this.char === CHAR_i) {
+        return this.next(this.parseInf)
+      } else if (this.char === CHAR_n) {
+        return this.next(this.parseNan)
+      } else if (isDigit(this.char)) {
+        return this.goto(this.parseNumberOrDateTime)
+      } else if (this.char === CHAR_t || this.char === CHAR_f) {
+        return this.goto(this.parseBoolean)
+      } else if (this.char === CHAR_LSQB) {
+        return this.call(this.parseInlineList, this.recordValue)
+      } else if (this.char === CHAR_LCUB) {
+        return this.call(this.parseInlineTable, this.recordValue)
+      } else {
+        throw this.error(new TomlError('Unexpected character, expecting string, number, datetime, boolean, inline array or inline table'))
+      }
+    }
+    recordValue (value) {
+      return this.returnNow(value)
+    }
+
+    parseInf () {
+      if (this.char === CHAR_n) {
+        return this.next(this.parseInf2)
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected "inf", "+inf" or "-inf"'))
+      }
+    }
+    parseInf2 () {
+      if (this.char === CHAR_f) {
+        if (this.state.buf === '-') {
+          return this.return(-Infinity)
+        } else {
+          return this.return(Infinity)
+        }
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected "inf", "+inf" or "-inf"'))
+      }
+    }
+
+    parseNan () {
+      if (this.char === CHAR_a) {
+        return this.next(this.parseNan2)
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected "nan"'))
+      }
+    }
+    parseNan2 () {
+      if (this.char === CHAR_n) {
+        return this.return(NaN)
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected "nan"'))
+      }
+    }
+
+    /* KEYS, barewords or basic, literal, or dotted */
+    parseKeyword () {
+      if (this.char === CHAR_QUOT) {
+        return this.next(this.parseBasicString)
+      } else if (this.char === CHAR_APOS) {
+        return this.next(this.parseLiteralString)
+      } else {
+        return this.goto(this.parseBareKey)
+      }
+    }
+
+    /* KEYS: barewords */
+    parseBareKey () {
+      do {
+        if (this.char === Parser.END) {
+          throw this.error(new TomlError('Key ended without value'))
+        } else if (isAlphaNumHyphen(this.char)) {
+          this.consume()
+        } else if (this.state.buf.length === 0) {
+          throw this.error(new TomlError('Empty bare keys are not allowed'))
+        } else {
+          return this.returnNow()
+        }
+      } while (this.nextChar())
+    }
+
+    /* STRINGS, single quoted (literal) */
+    parseSingleString () {
+      if (this.char === CHAR_APOS) {
+        return this.next(this.parseLiteralMultiStringMaybe)
+      } else {
+        return this.goto(this.parseLiteralString)
+      }
+    }
+    parseLiteralString () {
+      do {
+        if (this.char === CHAR_APOS) {
+          return this.return()
+        } else if (this.atEndOfLine()) {
+          throw this.error(new TomlError('Unterminated string'))
+        } else if (this.char === CHAR_DEL || (this.char <= CTRL_CHAR_BOUNDARY && this.char !== CTRL_I)) {
+          throw this.errorControlCharIn('strings')
+        } else {
+          this.consume()
+        }
+      } while (this.nextChar())
+    }
+    parseLiteralMultiStringMaybe () {
+      if (this.char === CHAR_APOS) {
+        return this.next(this.parseLiteralMultiString)
+      } else {
+        return this.returnNow()
+      }
+    }
+    parseLiteralMultiString () {
+      if (this.char === CTRL_M) {
+        return null
+      } else if (this.char === CTRL_J) {
+        return this.next(this.parseLiteralMultiStringContent)
+      } else {
+        return this.goto(this.parseLiteralMultiStringContent)
+      }
+    }
+    parseLiteralMultiStringContent () {
+      do {
+        if (this.char === CHAR_APOS) {
+          return this.next(this.parseLiteralMultiEnd)
+        } else if (this.char === Parser.END) {
+          throw this.error(new TomlError('Unterminated multi-line string'))
+        } else if (this.char === CHAR_DEL || (this.char <= CTRL_CHAR_BOUNDARY && this.char !== CTRL_I && this.char !== CTRL_J && this.char !== CTRL_M)) {
+          throw this.errorControlCharIn('strings')
+        } else {
+          this.consume()
+        }
+      } while (this.nextChar())
+    }
+    parseLiteralMultiEnd () {
+      if (this.char === CHAR_APOS) {
+        return this.next(this.parseLiteralMultiEnd2)
+      } else {
+        this.state.buf += "'"
+        return this.goto(this.parseLiteralMultiStringContent)
+      }
+    }
+    parseLiteralMultiEnd2 () {
+      if (this.char === CHAR_APOS) {
+        return this.next(this.parseLiteralMultiEnd3)
+      } else {
+        this.state.buf += "''"
+        return this.goto(this.parseLiteralMultiStringContent)
+      }
+    }
+    parseLiteralMultiEnd3 () {
+      if (this.char === CHAR_APOS) {
+        this.state.buf += "'"
+        return this.next(this.parseLiteralMultiEnd4)
+      } else {
+        return this.returnNow()
+      }
+    }
+    parseLiteralMultiEnd4 () {
+      if (this.char === CHAR_APOS) {
+        this.state.buf += "'"
+        return this.return()
+      } else {
+        return this.returnNow()
+      }
+    }
+
+    /* STRINGS double quoted */
+    parseDoubleString () {
+      if (this.char === CHAR_QUOT) {
+        return this.next(this.parseMultiStringMaybe)
+      } else {
+        return this.goto(this.parseBasicString)
+      }
+    }
+    parseBasicString () {
+      do {
+        if (this.char === CHAR_BSOL) {
+          return this.call(this.parseEscape, this.recordEscapeReplacement)
+        } else if (this.char === CHAR_QUOT) {
+          return this.return()
+        } else if (this.atEndOfLine()) {
+          throw this.error(new TomlError('Unterminated string'))
+        } else if (this.char === CHAR_DEL || (this.char <= CTRL_CHAR_BOUNDARY && this.char !== CTRL_I)) {
+          throw this.errorControlCharIn('strings')
+        } else {
+          this.consume()
+        }
+      } while (this.nextChar())
+    }
+    recordEscapeReplacement (replacement) {
+      this.state.buf += replacement
+      return this.goto(this.parseBasicString)
+    }
+    parseMultiStringMaybe () {
+      if (this.char === CHAR_QUOT) {
+        return this.next(this.parseMultiString)
+      } else {
+        return this.returnNow()
+      }
+    }
+    parseMultiString () {
+      if (this.char === CTRL_M) {
+        return null
+      } else if (this.char === CTRL_J) {
+        return this.next(this.parseMultiStringContent)
+      } else {
+        return this.goto(this.parseMultiStringContent)
+      }
+    }
+    parseMultiStringContent () {
+      do {
+        if (this.char === CHAR_BSOL) {
+          return this.call(this.parseMultiEscape, this.recordMultiEscapeReplacement)
+        } else if (this.char === CHAR_QUOT) {
+          return this.next(this.parseMultiEnd)
+        } else if (this.char === Parser.END) {
+          throw this.error(new TomlError('Unterminated multi-line string'))
+        } else if (this.char === CHAR_DEL || (this.char <= CTRL_CHAR_BOUNDARY && this.char !== CTRL_I && this.char !== CTRL_J && this.char !== CTRL_M)) {
+          throw this.errorControlCharIn('strings')
+        } else {
+          this.consume()
+        }
+      } while (this.nextChar())
+    }
+    errorControlCharIn (type) {
+      let displayCode = '\\u00'
+      if (this.char < 16) {
+        displayCode += '0'
+      }
+      displayCode += this.char.toString(16)
+
+      return this.error(new TomlError(`Control characters (codes < 0x1f and 0x7f) are not allowed in ${type}, use ${displayCode} instead`))
+    }
+    recordMultiEscapeReplacement (replacement) {
+      this.state.buf += replacement
+      return this.goto(this.parseMultiStringContent)
+    }
+    parseMultiEnd () {
+      if (this.char === CHAR_QUOT) {
+        return this.next(this.parseMultiEnd2)
+      } else {
+        this.state.buf += '"'
+        return this.goto(this.parseMultiStringContent)
+      }
+    }
+    parseMultiEnd2 () {
+      if (this.char === CHAR_QUOT) {
+        return this.next(this.parseMultiEnd3)
+      } else {
+        this.state.buf += '""'
+        return this.goto(this.parseMultiStringContent)
+      }
+    }
+    parseMultiEnd3 () {
+      if (this.char === CHAR_QUOT) {
+        this.state.buf += '"'
+        return this.next(this.parseMultiEnd4)
+      } else {
+        return this.returnNow()
+      }
+    }
+    parseMultiEnd4 () {
+      if (this.char === CHAR_QUOT) {
+        this.state.buf += '"'
+        return this.return()
+      } else {
+        return this.returnNow()
+      }
+    }
+    parseMultiEscape () {
+      if (this.char === CTRL_M || this.char === CTRL_J) {
+        return this.next(this.parseMultiTrim)
+      } else if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return this.next(this.parsePreMultiTrim)
+      } else {
+        return this.goto(this.parseEscape)
+      }
+    }
+    parsePreMultiTrim () {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else if (this.char === CTRL_M || this.char === CTRL_J) {
+        return this.next(this.parseMultiTrim)
+      } else {
+        throw this.error(new TomlError("Can't escape whitespace"))
+      }
+    }
+    parseMultiTrim () {
+      // explicitly whitespace here, END should follow the same path as chars
+      if (this.char === CTRL_J || this.char === CHAR_SP || this.char === CTRL_I || this.char === CTRL_M) {
+        return null
+      } else {
+        return this.returnNow()
+      }
+    }
+    parseEscape () {
+      if (this.char in escapes) {
+        return this.return(escapes[this.char])
+      } else if (this.char === CHAR_u) {
+        return this.call(this.parseSmallUnicode, this.parseUnicodeReturn)
+      } else if (this.char === CHAR_U) {
+        return this.call(this.parseLargeUnicode, this.parseUnicodeReturn)
+      } else {
+        throw this.error(new TomlError('Unknown escape character: ' + this.char))
+      }
+    }
+    parseUnicodeReturn (char) {
+      try {
+        const codePoint = parseInt(char, 16)
+        if (codePoint >= SURROGATE_FIRST && codePoint <= SURROGATE_LAST) {
+          throw this.error(new TomlError('Invalid unicode, character in range 0xD800 - 0xDFFF is reserved'))
+        }
+        return this.returnNow(String.fromCodePoint(codePoint))
+      } catch (err) {
+        throw this.error(TomlError.wrap(err))
+      }
+    }
+    parseSmallUnicode () {
+      if (!isHexit(this.char)) {
+        throw this.error(new TomlError('Invalid character in unicode sequence, expected hex'))
+      } else {
+        this.consume()
+        if (this.state.buf.length >= 4) return this.return()
+      }
+    }
+    parseLargeUnicode () {
+      if (!isHexit(this.char)) {
+        throw this.error(new TomlError('Invalid character in unicode sequence, expected hex'))
+      } else {
+        this.consume()
+        if (this.state.buf.length >= 8) return this.return()
+      }
+    }
+
+    /* NUMBERS */
+    parseNumberSign () {
+      this.consume()
+      return this.next(this.parseMaybeSignedInfOrNan)
+    }
+    parseMaybeSignedInfOrNan () {
+      if (this.char === CHAR_i) {
+        return this.next(this.parseInf)
+      } else if (this.char === CHAR_n) {
+        return this.next(this.parseNan)
+      } else {
+        return this.callNow(this.parseNoUnder, this.parseNumberIntegerStart)
+      }
+    }
+    parseNumberIntegerStart () {
+      if (this.char === CHAR_0) {
+        this.consume()
+        return this.next(this.parseNumberIntegerExponentOrDecimal)
+      } else {
+        return this.goto(this.parseNumberInteger)
+      }
+    }
+    parseNumberIntegerExponentOrDecimal () {
+      if (this.char === CHAR_PERIOD) {
+        this.consume()
+        return this.call(this.parseNoUnder, this.parseNumberFloat)
+      } else if (this.char === CHAR_E || this.char === CHAR_e) {
+        this.consume()
+        return this.next(this.parseNumberExponentSign)
+      } else {
+        return this.returnNow(Integer(this.state.buf))
+      }
+    }
+    parseNumberInteger () {
+      if (isDigit(this.char)) {
+        this.consume()
+      } else if (this.char === CHAR_LOWBAR) {
+        return this.call(this.parseNoUnder)
+      } else if (this.char === CHAR_E || this.char === CHAR_e) {
+        this.consume()
+        return this.next(this.parseNumberExponentSign)
+      } else if (this.char === CHAR_PERIOD) {
+        this.consume()
+        return this.call(this.parseNoUnder, this.parseNumberFloat)
+      } else {
+        const result = Integer(this.state.buf)
+        /* istanbul ignore if */
+        if (result.isNaN()) {
+          throw this.error(new TomlError('Invalid number'))
+        } else {
+          return this.returnNow(result)
+        }
+      }
+    }
+    parseNoUnder () {
+      if (this.char === CHAR_LOWBAR || this.char === CHAR_PERIOD || this.char === CHAR_E || this.char === CHAR_e) {
+        throw this.error(new TomlError('Unexpected character, expected digit'))
+      } else if (this.atEndOfWord()) {
+        throw this.error(new TomlError('Incomplete number'))
+      }
+      return this.returnNow()
+    }
+    parseNoUnderHexOctBinLiteral () {
+      if (this.char === CHAR_LOWBAR || this.char === CHAR_PERIOD) {
+        throw this.error(new TomlError('Unexpected character, expected digit'))
+      } else if (this.atEndOfWord()) {
+        throw this.error(new TomlError('Incomplete number'))
+      }
+      return this.returnNow()
+    }
+    parseNumberFloat () {
+      if (this.char === CHAR_LOWBAR) {
+        return this.call(this.parseNoUnder, this.parseNumberFloat)
+      } else if (isDigit(this.char)) {
+        this.consume()
+      } else if (this.char === CHAR_E || this.char === CHAR_e) {
+        this.consume()
+        return this.next(this.parseNumberExponentSign)
+      } else {
+        return this.returnNow(Float(this.state.buf))
+      }
+    }
+    parseNumberExponentSign () {
+      if (isDigit(this.char)) {
+        return this.goto(this.parseNumberExponent)
+      } else if (this.char === CHAR_HYPHEN || this.char === CHAR_PLUS) {
+        this.consume()
+        this.call(this.parseNoUnder, this.parseNumberExponent)
+      } else {
+        throw this.error(new TomlError('Unexpected character, expected -, + or digit'))
+      }
+    }
+    parseNumberExponent () {
+      if (isDigit(this.char)) {
+        this.consume()
+      } else if (this.char === CHAR_LOWBAR) {
+        return this.call(this.parseNoUnder)
+      } else {
+        return this.returnNow(Float(this.state.buf))
+      }
+    }
+
+    /* NUMBERS or DATETIMES  */
+    parseNumberOrDateTime () {
+      if (this.char === CHAR_0) {
+        this.consume()
+        return this.next(this.parseNumberBaseOrDateTime)
+      } else {
+        return this.goto(this.parseNumberOrDateTimeOnly)
+      }
+    }
+    parseNumberOrDateTimeOnly () {
+      // note, if two zeros are in a row then it MUST be a date
+      if (this.char === CHAR_LOWBAR) {
+        return this.call(this.parseNoUnder, this.parseNumberInteger)
+      } else if (isDigit(this.char)) {
+        this.consume()
+        if (this.state.buf.length > 4) this.next(this.parseNumberInteger)
+      } else if (this.char === CHAR_E || this.char === CHAR_e) {
+        this.consume()
+        return this.next(this.parseNumberExponentSign)
+      } else if (this.char === CHAR_PERIOD) {
+        this.consume()
+        return this.call(this.parseNoUnder, this.parseNumberFloat)
+      } else if (this.char === CHAR_HYPHEN) {
+        return this.goto(this.parseDateTime)
+      } else if (this.char === CHAR_COLON) {
+        return this.goto(this.parseOnlyTimeHour)
+      } else {
+        return this.returnNow(Integer(this.state.buf))
+      }
+    }
+    parseDateTimeOnly () {
+      if (this.state.buf.length < 4) {
+        if (isDigit(this.char)) {
+          return this.consume()
+        } else if (this.char === CHAR_COLON) {
+          return this.goto(this.parseOnlyTimeHour)
+        } else {
+          throw this.error(new TomlError('Expected digit while parsing year part of a date'))
+        }
+      } else {
+        if (this.char === CHAR_HYPHEN) {
+          return this.goto(this.parseDateTime)
+        } else {
+          throw this.error(new TomlError('Expected hyphen (-) while parsing year part of date'))
+        }
+      }
+    }
+    parseNumberBaseOrDateTime () {
+      if (this.char === CHAR_b) {
+        this.consume()
+        return this.call(this.parseNoUnderHexOctBinLiteral, this.parseIntegerBin)
+      } else if (this.char === CHAR_o) {
+        this.consume()
+        return this.call(this.parseNoUnderHexOctBinLiteral, this.parseIntegerOct)
+      } else if (this.char === CHAR_x) {
+        this.consume()
+        return this.call(this.parseNoUnderHexOctBinLiteral, this.parseIntegerHex)
+      } else if (this.char === CHAR_PERIOD) {
+        return this.goto(this.parseNumberInteger)
+      } else if (isDigit(this.char)) {
+        return this.goto(this.parseDateTimeOnly)
+      } else {
+        return this.returnNow(Integer(this.state.buf))
+      }
+    }
+    parseIntegerHex () {
+      if (isHexit(this.char)) {
+        this.consume()
+      } else if (this.char === CHAR_LOWBAR) {
+        return this.call(this.parseNoUnderHexOctBinLiteral)
+      } else {
+        const result = Integer(this.state.buf)
+        /* istanbul ignore if */
+        if (result.isNaN()) {
+          throw this.error(new TomlError('Invalid number'))
+        } else {
+          return this.returnNow(result)
+        }
+      }
+    }
+    parseIntegerOct () {
+      if (isOctit(this.char)) {
+        this.consume()
+      } else if (this.char === CHAR_LOWBAR) {
+        return this.call(this.parseNoUnderHexOctBinLiteral)
+      } else {
+        const result = Integer(this.state.buf)
+        /* istanbul ignore if */
+        if (result.isNaN()) {
+          throw this.error(new TomlError('Invalid number'))
+        } else {
+          return this.returnNow(result)
+        }
+      }
+    }
+    parseIntegerBin () {
+      if (isBit(this.char)) {
+        this.consume()
+      } else if (this.char === CHAR_LOWBAR) {
+        return this.call(this.parseNoUnderHexOctBinLiteral)
+      } else {
+        const result = Integer(this.state.buf)
+        /* istanbul ignore if */
+        if (result.isNaN()) {
+          throw this.error(new TomlError('Invalid number'))
+        } else {
+          return this.returnNow(result)
+        }
+      }
+    }
+
+    /* DATETIME */
+    parseDateTime () {
+      // we enter here having just consumed the year and about to consume the hyphen
+      if (this.state.buf.length < 4) {
+        throw this.error(new TomlError('Years less than 1000 must be zero padded to four characters'))
+      }
+      this.state.result = this.state.buf
+      this.state.buf = ''
+      return this.next(this.parseDateMonth)
+    }
+    parseDateMonth () {
+      if (this.char === CHAR_HYPHEN) {
+        if (this.state.buf.length < 2) {
+          throw this.error(new TomlError('Months less than 10 must be zero padded to two characters'))
+        }
+        this.state.result += '-' + this.state.buf
+        this.state.buf = ''
+        return this.next(this.parseDateDay)
+      } else if (isDigit(this.char)) {
+        this.consume()
+      } else {
+        throw this.error(new TomlError('Incomplete datetime'))
+      }
+    }
+    parseDateDay () {
+      if (this.char === CHAR_T || this.char === CHAR_SP) {
+        if (this.state.buf.length < 2) {
+          throw this.error(new TomlError('Days less than 10 must be zero padded to two characters'))
+        }
+        this.state.result += '-' + this.state.buf
+        this.state.buf = ''
+        return this.next(this.parseStartTimeHour)
+      } else if (this.atEndOfWord()) {
+        return this.returnNow(createDate(this.state.result + '-' + this.state.buf))
+      } else if (isDigit(this.char)) {
+        this.consume()
+      } else {
+        throw this.error(new TomlError('Incomplete datetime'))
+      }
+    }
+    parseStartTimeHour () {
+      if (this.atEndOfWord()) {
+        return this.returnNow(createDate(this.state.result))
+      } else {
+        return this.goto(this.parseTimeHour)
+      }
+    }
+    parseTimeHour () {
+      if (this.char === CHAR_COLON) {
+        if (this.state.buf.length < 2) {
+          throw this.error(new TomlError('Hours less than 10 must be zero padded to two characters'))
+        }
+        this.state.result += 'T' + this.state.buf
+        this.state.buf = ''
+        return this.next(this.parseTimeMin)
+      } else if (isDigit(this.char)) {
+        this.consume()
+      } else {
+        throw this.error(new TomlError('Incomplete datetime'))
+      }
+    }
+    parseTimeMin () {
+      if (this.state.buf.length < 2 && isDigit(this.char)) {
+        this.consume()
+      } else if (this.state.buf.length === 2 && this.char === CHAR_COLON) {
+        this.state.result += ':' + this.state.buf
+        this.state.buf = ''
+        return this.next(this.parseTimeSec)
+      } else {
+        throw this.error(new TomlError('Incomplete datetime'))
+      }
+    }
+    parseTimeSec () {
+      if (isDigit(this.char)) {
+        this.consume()
+        if (this.state.buf.length === 2) {
+          this.state.result += ':' + this.state.buf
+          this.state.buf = ''
+          return this.next(this.parseTimeZoneOrFraction)
+        }
+      } else {
+        throw this.error(new TomlError('Incomplete datetime'))
+      }
+    }
+
+    parseOnlyTimeHour () {
+      /* istanbul ignore else */
+      if (this.char === CHAR_COLON) {
+        if (this.state.buf.length < 2) {
+          throw this.error(new TomlError('Hours less than 10 must be zero padded to two characters'))
+        }
+        this.state.result = this.state.buf
+        this.state.buf = ''
+        return this.next(this.parseOnlyTimeMin)
+      } else {
+        throw this.error(new TomlError('Incomplete time'))
+      }
+    }
+    parseOnlyTimeMin () {
+      if (this.state.buf.length < 2 && isDigit(this.char)) {
+        this.consume()
+      } else if (this.state.buf.length === 2 && this.char === CHAR_COLON) {
+        this.state.result += ':' + this.state.buf
+        this.state.buf = ''
+        return this.next(this.parseOnlyTimeSec)
+      } else {
+        throw this.error(new TomlError('Incomplete time'))
+      }
+    }
+    parseOnlyTimeSec () {
+      if (isDigit(this.char)) {
+        this.consume()
+        if (this.state.buf.length === 2) {
+          return this.next(this.parseOnlyTimeFractionMaybe)
+        }
+      } else {
+        throw this.error(new TomlError('Incomplete time'))
+      }
+    }
+    parseOnlyTimeFractionMaybe () {
+      this.state.result += ':' + this.state.buf
+      if (this.char === CHAR_PERIOD) {
+        this.state.buf = ''
+        this.next(this.parseOnlyTimeFraction)
+      } else {
+        return this.return(createTime(this.state.result))
+      }
+    }
+    parseOnlyTimeFraction () {
+      if (isDigit(this.char)) {
+        this.consume()
+      } else if (this.atEndOfWord()) {
+        if (this.state.buf.length === 0) throw this.error(new TomlError('Expected digit in milliseconds'))
+        return this.returnNow(createTime(this.state.result + '.' + this.state.buf))
+      } else {
+        throw this.error(new TomlError('Unexpected character in datetime, expected period (.), minus (-), plus (+) or Z'))
+      }
+    }
+
+    parseTimeZoneOrFraction () {
+      if (this.char === CHAR_PERIOD) {
+        this.consume()
+        this.next(this.parseDateTimeFraction)
+      } else if (this.char === CHAR_HYPHEN || this.char === CHAR_PLUS) {
+        this.consume()
+        this.next(this.parseTimeZoneHour)
+      } else if (this.char === CHAR_Z) {
+        this.consume()
+        return this.return(createDateTime(this.state.result + this.state.buf))
+      } else if (this.atEndOfWord()) {
+        return this.returnNow(createDateTimeFloat(this.state.result + this.state.buf))
+      } else {
+        throw this.error(new TomlError('Unexpected character in datetime, expected period (.), minus (-), plus (+) or Z'))
+      }
+    }
+    parseDateTimeFraction () {
+      if (isDigit(this.char)) {
+        this.consume()
+      } else if (this.state.buf.length === 1) {
+        throw this.error(new TomlError('Expected digit in milliseconds'))
+      } else if (this.char === CHAR_HYPHEN || this.char === CHAR_PLUS) {
+        this.consume()
+        this.next(this.parseTimeZoneHour)
+      } else if (this.char === CHAR_Z) {
+        this.consume()
+        return this.return(createDateTime(this.state.result + this.state.buf))
+      } else if (this.atEndOfWord()) {
+        return this.returnNow(createDateTimeFloat(this.state.result + this.state.buf))
+      } else {
+        throw this.error(new TomlError('Unexpected character in datetime, expected period (.), minus (-), plus (+) or Z'))
+      }
+    }
+    parseTimeZoneHour () {
+      if (isDigit(this.char)) {
+        this.consume()
+        // FIXME: No more regexps
+        if (/\d\d$/.test(this.state.buf)) return this.next(this.parseTimeZoneSep)
+      } else {
+        throw this.error(new TomlError('Unexpected character in datetime, expected digit'))
+      }
+    }
+    parseTimeZoneSep () {
+      if (this.char === CHAR_COLON) {
+        this.consume()
+        this.next(this.parseTimeZoneMin)
+      } else {
+        throw this.error(new TomlError('Unexpected character in datetime, expected colon'))
+      }
+    }
+    parseTimeZoneMin () {
+      if (isDigit(this.char)) {
+        this.consume()
+        if (/\d\d$/.test(this.state.buf)) return this.return(createDateTime(this.state.result + this.state.buf))
+      } else {
+        throw this.error(new TomlError('Unexpected character in datetime, expected digit'))
+      }
+    }
+
+    /* BOOLEAN */
+    parseBoolean () {
+      /* istanbul ignore else */
+      if (this.char === CHAR_t) {
+        this.consume()
+        return this.next(this.parseTrue_r)
+      } else if (this.char === CHAR_f) {
+        this.consume()
+        return this.next(this.parseFalse_a)
+      }
+    }
+    parseTrue_r () {
+      if (this.char === CHAR_r) {
+        this.consume()
+        return this.next(this.parseTrue_u)
+      } else {
+        throw this.error(new TomlError('Invalid boolean, expected true or false'))
+      }
+    }
+    parseTrue_u () {
+      if (this.char === CHAR_u) {
+        this.consume()
+        return this.next(this.parseTrue_e)
+      } else {
+        throw this.error(new TomlError('Invalid boolean, expected true or false'))
+      }
+    }
+    parseTrue_e () {
+      if (this.char === CHAR_e) {
+        return this.return(true)
+      } else {
+        throw this.error(new TomlError('Invalid boolean, expected true or false'))
+      }
+    }
+
+    parseFalse_a () {
+      if (this.char === CHAR_a) {
+        this.consume()
+        return this.next(this.parseFalse_l)
+      } else {
+        throw this.error(new TomlError('Invalid boolean, expected true or false'))
+      }
+    }
+
+    parseFalse_l () {
+      if (this.char === CHAR_l) {
+        this.consume()
+        return this.next(this.parseFalse_s)
+      } else {
+        throw this.error(new TomlError('Invalid boolean, expected true or false'))
+      }
+    }
+
+    parseFalse_s () {
+      if (this.char === CHAR_s) {
+        this.consume()
+        return this.next(this.parseFalse_e)
+      } else {
+        throw this.error(new TomlError('Invalid boolean, expected true or false'))
+      }
+    }
+
+    parseFalse_e () {
+      if (this.char === CHAR_e) {
+        return this.return(false)
+      } else {
+        throw this.error(new TomlError('Invalid boolean, expected true or false'))
+      }
+    }
+
+    /* INLINE LISTS */
+    parseInlineList () {
+      if (this.char === CHAR_SP || this.char === CTRL_I || this.char === CTRL_M || this.char === CTRL_J) {
+        return null
+      } else if (this.char === Parser.END) {
+        throw this.error(new TomlError('Unterminated inline array'))
+      } else if (this.char === CHAR_NUM) {
+        return this.call(this.parseComment)
+      } else if (this.char === CHAR_RSQB) {
+        return this.return(this.state.resultArr || InlineList())
+      } else {
+        return this.callNow(this.parseValue, this.recordInlineListValue)
+      }
+    }
+    recordInlineListValue (value) {
+      if (!this.state.resultArr) {
+        this.state.resultArr = InlineList(tomlType(value))
+      }
+      if (isFloat(value) || isInteger(value)) {
+        // unbox now that we've verified they're ok
+        this.state.resultArr.push(value.valueOf())
+      } else {
+        this.state.resultArr.push(value)
+      }
+      return this.goto(this.parseInlineListNext)
+    }
+    parseInlineListNext () {
+      if (this.char === CHAR_SP || this.char === CTRL_I || this.char === CTRL_M || this.char === CTRL_J) {
+        return null
+      } else if (this.char === CHAR_NUM) {
+        return this.call(this.parseComment)
+      } else if (this.char === CHAR_COMMA) {
+        return this.next(this.parseInlineList)
+      } else if (this.char === CHAR_RSQB) {
+        return this.goto(this.parseInlineList)
+      } else {
+        throw this.error(new TomlError('Invalid character, expected whitespace, comma (,) or close bracket (])'))
+      }
+    }
+
+    /* INLINE TABLE */
+    parseInlineTable () {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else if (this.char === Parser.END || this.char === CHAR_NUM || this.char === CTRL_J || this.char === CTRL_M) {
+        throw this.error(new TomlError('Unterminated inline array'))
+      } else if (this.char === CHAR_RCUB) {
+        return this.return(this.state.resultTable || InlineTable())
+      } else {
+        if (!this.state.resultTable) this.state.resultTable = InlineTable()
+        return this.callNow(this.parseAssign, this.recordInlineTableValue)
+      }
+    }
+    recordInlineTableValue (kv) {
+      let target = this.state.resultTable
+      let finalKey = kv.key.pop()
+      for (let kw of kv.key) {
+        if (hasKey(target, kw) && (!isTable(target[kw]) || target[kw][_declared])) {
+          throw this.error(new TomlError("Can't redefine existing key"))
+        }
+        target = target[kw] = target[kw] || Table()
+      }
+      if (hasKey(target, finalKey)) {
+        throw this.error(new TomlError("Can't redefine existing key"))
+      }
+      if (isInteger(kv.value) || isFloat(kv.value)) {
+        target[finalKey] = kv.value.valueOf()
+      } else {
+        target[finalKey] = kv.value
+      }
+      return this.goto(this.parseInlineTableNext)
+    }
+    parseInlineTableNext () {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else if (this.char === Parser.END || this.char === CHAR_NUM || this.char === CTRL_J || this.char === CTRL_M) {
+        throw this.error(new TomlError('Unterminated inline array'))
+      } else if (this.char === CHAR_COMMA) {
+        return this.next(this.parseInlineTablePostComma)
+      } else if (this.char === CHAR_RCUB) {
+        return this.goto(this.parseInlineTable)
+      } else {
+        throw this.error(new TomlError('Invalid character, expected whitespace, comma (,) or close bracket (])'))
+      }
+    }
+    parseInlineTablePostComma () {
+      if (this.char === CHAR_SP || this.char === CTRL_I) {
+        return null
+      } else if (this.char === Parser.END || this.char === CHAR_NUM || this.char === CTRL_J || this.char === CTRL_M) {
+        throw this.error(new TomlError('Unterminated inline array'))
+      } else if (this.char === CHAR_COMMA) {
+        throw this.error(new TomlError('Empty elements in inline tables are not permitted'))
+      } else if (this.char === CHAR_RCUB) {
+        throw this.error(new TomlError('Trailing commas in inline tables are not permitted'))
+      } else {
+        return this.goto(this.parseInlineTable)
+      }
+    }
+  }
+  return TOMLParser
+}
+
+
+/***/ }),
+
+/***/ 7072:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+module.exports = parseAsync
+
+const TOMLParser = __nccwpck_require__(2862)
+const prettyError = __nccwpck_require__(7349)
+
+function parseAsync (str, opts) {
+  if (!opts) opts = {}
+  const index = 0
+  const blocksize = opts.blocksize || 40960
+  const parser = new TOMLParser()
+  return new Promise((resolve, reject) => {
+    setImmediate(parseAsyncNext, index, blocksize, resolve, reject)
+  })
+  function parseAsyncNext (index, blocksize, resolve, reject) {
+    if (index >= str.length) {
+      try {
+        return resolve(parser.finish())
+      } catch (err) {
+        return reject(prettyError(err, str))
+      }
+    }
+    try {
+      parser.parse(str.slice(index, index + blocksize))
+      setImmediate(parseAsyncNext, index + blocksize, blocksize, resolve, reject)
+    } catch (err) {
+      reject(prettyError(err, str))
+    }
+  }
+}
+
+
+/***/ }),
+
+/***/ 7349:
+/***/ ((module) => {
+
+
+module.exports = prettyError
+
+function prettyError (err, buf) {
+  /* istanbul ignore if */
+  if (err.pos == null || err.line == null) return err
+  let msg = err.message
+  msg += ` at row ${err.line + 1}, col ${err.col + 1}, pos ${err.pos}:\n`
+
+  /* istanbul ignore else */
+  if (buf && buf.split) {
+    const lines = buf.split(/\n/)
+    const lineNumWidth = String(Math.min(lines.length, err.line + 3)).length
+    let linePadding = ' '
+    while (linePadding.length < lineNumWidth) linePadding += ' '
+    for (let ii = Math.max(0, err.line - 1); ii < Math.min(lines.length, err.line + 2); ++ii) {
+      let lineNum = String(ii + 1)
+      if (lineNum.length < lineNumWidth) lineNum = ' ' + lineNum
+      if (err.line === ii) {
+        msg += lineNum + '> ' + lines[ii] + '\n'
+        msg += linePadding + '  '
+        for (let hh = 0; hh < err.col; ++hh) {
+          msg += ' '
+        }
+        msg += '^\n'
+      } else {
+        msg += lineNum + ': ' + lines[ii] + '\n'
+      }
+    }
+  }
+  err.message = msg + '\n'
+  return err
+}
+
+
+/***/ }),
+
+/***/ 4493:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+module.exports = parseStream
+
+const stream = __nccwpck_require__(2203)
+const TOMLParser = __nccwpck_require__(2862)
+
+function parseStream (stm) {
+  if (stm) {
+    return parseReadable(stm)
+  } else {
+    return parseTransform(stm)
+  }
+}
+
+function parseReadable (stm) {
+  const parser = new TOMLParser()
+  stm.setEncoding('utf8')
+  return new Promise((resolve, reject) => {
+    let readable
+    let ended = false
+    let errored = false
+    function finish () {
+      ended = true
+      if (readable) return
+      try {
+        resolve(parser.finish())
+      } catch (err) {
+        reject(err)
+      }
+    }
+    function error (err) {
+      errored = true
+      reject(err)
+    }
+    stm.once('end', finish)
+    stm.once('error', error)
+    readNext()
+
+    function readNext () {
+      readable = true
+      let data
+      while ((data = stm.read()) !== null) {
+        try {
+          parser.parse(data)
+        } catch (err) {
+          return error(err)
+        }
+      }
+      readable = false
+      /* istanbul ignore if */
+      if (ended) return finish()
+      /* istanbul ignore if */
+      if (errored) return
+      stm.once('readable', readNext)
+    }
+  })
+}
+
+function parseTransform () {
+  const parser = new TOMLParser()
+  return new stream.Transform({
+    objectMode: true,
+    transform (chunk, encoding, cb) {
+      try {
+        parser.parse(chunk.toString(encoding))
+      } catch (err) {
+        this.emit('error', err)
+      }
+      cb()
+    },
+    flush (cb) {
+      try {
+        this.push(parser.finish())
+      } catch (err) {
+        this.emit('error', err)
+      }
+      cb()
+    }
+  })
+}
+
+
+/***/ }),
+
+/***/ 4171:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+module.exports = parseString
+
+const TOMLParser = __nccwpck_require__(2862)
+const prettyError = __nccwpck_require__(7349)
+
+function parseString (str) {
+  if (global.Buffer && global.Buffer.isBuffer(str)) {
+    str = str.toString('utf8')
+  }
+  const parser = new TOMLParser()
+  try {
+    parser.parse(str)
+    return parser.finish()
+  } catch (err) {
+    throw prettyError(err, str)
+  }
+}
+
+
+/***/ }),
+
+/***/ 9185:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+/* unused reexport */ __nccwpck_require__(4171)
+/* unused reexport */ __nccwpck_require__(7072)
+/* unused reexport */ __nccwpck_require__(4493)
+/* unused reexport */ __nccwpck_require__(7349)
+
+
+/***/ }),
+
+/***/ 3887:
+/***/ ((module) => {
+
+
+module.exports = stringify
+module.exports.value = stringifyInline
+
+function stringify (obj) {
+  if (obj === null) throw typeError('null')
+  if (obj === void (0)) throw typeError('undefined')
+  if (typeof obj !== 'object') throw typeError(typeof obj)
+
+  if (typeof obj.toJSON === 'function') obj = obj.toJSON()
+  if (obj == null) return null
+  const type = tomlType(obj)
+  if (type !== 'table') throw typeError(type)
+  return stringifyObject('', '', obj)
+}
+
+function typeError (type) {
+  return new Error('Can only stringify objects, not ' + type)
+}
+
+function getInlineKeys (obj) {
+  return Object.keys(obj).filter(key => isInline(obj[key]))
+}
+function getComplexKeys (obj) {
+  return Object.keys(obj).filter(key => !isInline(obj[key]))
+}
+
+function toJSON (obj) {
+  let nobj = Array.isArray(obj) ? [] : Object.prototype.hasOwnProperty.call(obj, '__proto__') ? {['__proto__']: undefined} : {}
+  for (let prop of Object.keys(obj)) {
+    if (obj[prop] && typeof obj[prop].toJSON === 'function' && !('toISOString' in obj[prop])) {
+      nobj[prop] = obj[prop].toJSON()
+    } else {
+      nobj[prop] = obj[prop]
+    }
+  }
+  return nobj
+}
+
+function stringifyObject (prefix, indent, obj) {
+  obj = toJSON(obj)
+  let inlineKeys
+  let complexKeys
+  inlineKeys = getInlineKeys(obj)
+  complexKeys = getComplexKeys(obj)
+  const result = []
+  const inlineIndent = indent || ''
+  inlineKeys.forEach(key => {
+    var type = tomlType(obj[key])
+    if (type !== 'undefined' && type !== 'null') {
+      result.push(inlineIndent + stringifyKey(key) + ' = ' + stringifyAnyInline(obj[key], true))
+    }
+  })
+  if (result.length > 0) result.push('')
+  const complexIndent = prefix && inlineKeys.length > 0 ? indent + '  ' : ''
+  complexKeys.forEach(key => {
+    result.push(stringifyComplex(prefix, complexIndent, key, obj[key]))
+  })
+  return result.join('\n')
+}
+
+function isInline (value) {
+  switch (tomlType(value)) {
+    case 'undefined':
+    case 'null':
+    case 'integer':
+    case 'nan':
+    case 'float':
+    case 'boolean':
+    case 'string':
+    case 'datetime':
+      return true
+    case 'array':
+      return value.length === 0 || tomlType(value[0]) !== 'table'
+    case 'table':
+      return Object.keys(value).length === 0
+    /* istanbul ignore next */
+    default:
+      return false
+  }
+}
+
+function tomlType (value) {
+  if (value === undefined) {
+    return 'undefined'
+  } else if (value === null) {
+    return 'null'
+  /* eslint-disable valid-typeof */
+  } else if (typeof value === 'bigint' || (Number.isInteger(value) && !Object.is(value, -0))) {
+    return 'integer'
+  } else if (typeof value === 'number') {
+    return 'float'
+  } else if (typeof value === 'boolean') {
+    return 'boolean'
+  } else if (typeof value === 'string') {
+    return 'string'
+  } else if ('toISOString' in value) {
+    return isNaN(value) ? 'undefined' : 'datetime'
+  } else if (Array.isArray(value)) {
+    return 'array'
+  } else {
+    return 'table'
+  }
+}
+
+function stringifyKey (key) {
+  const keyStr = String(key)
+  if (/^[-A-Za-z0-9_]+$/.test(keyStr)) {
+    return keyStr
+  } else {
+    return stringifyBasicString(keyStr)
+  }
+}
+
+function stringifyBasicString (str) {
+  return '"' + escapeString(str).replace(/"/g, '\\"') + '"'
+}
+
+function stringifyLiteralString (str) {
+  return "'" + str + "'"
+}
+
+function numpad (num, str) {
+  while (str.length < num) str = '0' + str
+  return str
+}
+
+function escapeString (str) {
+  return str.replace(/\\/g, '\\\\')
+    .replace(/[\b]/g, '\\b')
+    .replace(/\t/g, '\\t')
+    .replace(/\n/g, '\\n')
+    .replace(/\f/g, '\\f')
+    .replace(/\r/g, '\\r')
+    /* eslint-disable no-control-regex */
+    .replace(/([\u0000-\u001f\u007f])/, c => '\\u' + numpad(4, c.codePointAt(0).toString(16)))
+    /* eslint-enable no-control-regex */
+}
+
+function stringifyMultilineString (str) {
+  let escaped = str.split(/\n/).map(str => {
+    return escapeString(str).replace(/"(?="")/g, '\\"')
+  }).join('\n')
+  if (escaped.slice(-1) === '"') escaped += '\\\n'
+  return '"""\n' + escaped + '"""'
+}
+
+function stringifyAnyInline (value, multilineOk) {
+  let type = tomlType(value)
+  if (type === 'string') {
+    if (multilineOk && /\n/.test(value)) {
+      type = 'string-multiline'
+    } else if (!/[\b\t\n\f\r']/.test(value) && /"/.test(value)) {
+      type = 'string-literal'
+    }
+  }
+  return stringifyInline(value, type)
+}
+
+function stringifyInline (value, type) {
+  /* istanbul ignore if */
+  if (!type) type = tomlType(value)
+  switch (type) {
+    case 'string-multiline':
+      return stringifyMultilineString(value)
+    case 'string':
+      return stringifyBasicString(value)
+    case 'string-literal':
+      return stringifyLiteralString(value)
+    case 'integer':
+      return stringifyInteger(value)
+    case 'float':
+      return stringifyFloat(value)
+    case 'boolean':
+      return stringifyBoolean(value)
+    case 'datetime':
+      return stringifyDatetime(value)
+    case 'array':
+      return stringifyInlineArray(value.filter(_ => tomlType(_) !== 'null' && tomlType(_) !== 'undefined' && tomlType(_) !== 'nan'))
+    case 'table':
+      return stringifyInlineTable(value)
+    /* istanbul ignore next */
+    default:
+      throw typeError(type)
+  }
+}
+
+function stringifyInteger (value) {
+  /* eslint-disable security/detect-unsafe-regex */
+  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '_')
+}
+
+function stringifyFloat (value) {
+  if (value === Infinity) {
+    return 'inf'
+  } else if (value === -Infinity) {
+    return '-inf'
+  } else if (Object.is(value, NaN)) {
+    return 'nan'
+  } else if (Object.is(value, -0)) {
+    return '-0.0'
+  }
+  const [int, dec] = String(value).split('.')
+  return stringifyInteger(int) + '.' + dec
+}
+
+function stringifyBoolean (value) {
+  return String(value)
+}
+
+function stringifyDatetime (value) {
+  return value.toISOString()
+}
+
+function stringifyInlineArray (values) {
+  values = toJSON(values)
+  let result = '['
+  const stringified = values.map(_ => stringifyInline(_))
+  if (stringified.join(', ').length > 60 || /\n/.test(stringified)) {
+    result += '\n  ' + stringified.join(',\n  ') + '\n'
+  } else {
+    result += ' ' + stringified.join(', ') + (stringified.length > 0 ? ' ' : '')
+  }
+  return result + ']'
+}
+
+function stringifyInlineTable (value) {
+  value = toJSON(value)
+  const result = []
+  Object.keys(value).forEach(key => {
+    result.push(stringifyKey(key) + ' = ' + stringifyAnyInline(value[key], false))
+  })
+  return '{ ' + result.join(', ') + (result.length > 0 ? ' ' : '') + '}'
+}
+
+function stringifyComplex (prefix, indent, key, value) {
+  const valueType = tomlType(value)
+  /* istanbul ignore else */
+  if (valueType === 'array') {
+    return stringifyArrayOfTables(prefix, indent, key, value)
+  } else if (valueType === 'table') {
+    return stringifyComplexTable(prefix, indent, key, value)
+  } else {
+    throw typeError(valueType)
+  }
+}
+
+function stringifyArrayOfTables (prefix, indent, key, values) {
+  values = toJSON(values)
+  const firstValueType = tomlType(values[0])
+  /* istanbul ignore if */
+  if (firstValueType !== 'table') throw typeError(firstValueType)
+  const fullKey = prefix + stringifyKey(key)
+  let result = ''
+  values.forEach(table => {
+    if (result.length > 0) result += '\n'
+    result += indent + '[[' + fullKey + ']]\n'
+    result += stringifyObject(fullKey + '.', indent, table)
+  })
+  return result
+}
+
+function stringifyComplexTable (prefix, indent, key, value) {
+  const fullKey = prefix + stringifyKey(key)
+  let result = ''
+  if (getInlineKeys(value).length > 0) {
+    result += indent + '[' + fullKey + ']\n'
+  }
+  return result + stringifyObject(fullKey + '.', indent, value)
+}
+
+
+/***/ }),
+
+/***/ 4572:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+/* unused reexport */ __nccwpck_require__(9185)
+/* unused reexport */ __nccwpck_require__(3887)
+
+
+/***/ }),
+
 /***/ 7889:
 /***/ (function(__unused_webpack_module, exports) {
 
@@ -8211,6 +10381,9 @@ class Range {
   }
 
   parseRange (range) {
+    // strip build metadata so it can't bleed into the version
+    range = range.replace(BUILDSTRIPRE, '')
+
     // memoize range parsing for performance.
     // this is a very hot path, and fully deterministic.
     const memoOpts =
@@ -8336,12 +10509,16 @@ const debug = __nccwpck_require__(1159)
 const SemVer = __nccwpck_require__(7163)
 const {
   safeRe: re,
+  src,
   t,
   comparatorTrimReplace,
   tildeTrimReplace,
   caretTrimReplace,
 } = __nccwpck_require__(5471)
 const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = __nccwpck_require__(5101)
+
+// unbounded global build-metadata stripper used by parseRange
+const BUILDSTRIPRE = new RegExp(src[t.BUILD], 'g')
 
 const isNullSet = c => c.value === '<0.0.0-0'
 const isAny = c => c.value === ''
@@ -8383,6 +10560,11 @@ const parseComparator = (comp, options) => {
 
 const isX = id => !id || id.toLowerCase() === 'x' || id === '*'
 
+const invalidXRangeOrder = (M, m, p) => (
+  (isX(M) && !isX(m)) ||
+  (isX(m) && p && !isX(p))
+)
+
 // ~, ~> --> * (any, kinda silly)
 // ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0-0
 // ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0-0
@@ -8400,6 +10582,10 @@ const replaceTildes = (comp, options) => {
 
 const replaceTilde = (comp, options) => {
   const r = options.loose ? re[t.TILDELOOSE] : re[t.TILDE]
+  // if we're including prereleases in the match, then the lower bound is
+  // -0, the lowest possible prerelease value, just like x-ranges and carets.
+  // this keeps `~1.2` equivalent to the `1.2.x` x-range it's documented as.
+  const z = options.includePrerelease ? '-0' : ''
   return comp.replace(r, (_, M, m, p, pr) => {
     debug('tilde', comp, _, M, m, p, pr)
     let ret
@@ -8407,10 +10593,10 @@ const replaceTilde = (comp, options) => {
     if (isX(M)) {
       ret = ''
     } else if (isX(m)) {
-      ret = `>=${M}.0.0 <${+M + 1}.0.0-0`
+      ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`
     } else if (isX(p)) {
       // ~1.2 == >=1.2.0 <1.3.0-0
-      ret = `>=${M}.${m}.0 <${M}.${+m + 1}.0-0`
+      ret = `>=${M}.${m}.0${z} <${M}.${+m + 1}.0-0`
     } else if (pr) {
       debug('replaceTilde pr', pr)
       ret = `>=${M}.${m}.${p}-${pr
@@ -8479,10 +10665,10 @@ const replaceCaret = (comp, options) => {
       if (M === '0') {
         if (m === '0') {
           ret = `>=${M}.${m}.${p
-          }${z} <${M}.${m}.${+p + 1}-0`
+          } <${M}.${m}.${+p + 1}-0`
         } else {
           ret = `>=${M}.${m}.${p
-          }${z} <${M}.${+m + 1}.0-0`
+          } <${M}.${+m + 1}.0-0`
         }
       } else {
         ret = `>=${M}.${m}.${p
@@ -8508,6 +10694,10 @@ const replaceXRange = (comp, options) => {
   const r = options.loose ? re[t.XRANGELOOSE] : re[t.XRANGE]
   return comp.replace(r, (ret, gtlt, M, m, p, pr) => {
     debug('xRange', comp, ret, gtlt, M, m, p, pr)
+    if (invalidXRangeOrder(M, m, p)) {
+      return comp
+    }
+
     const xM = isX(M)
     const xm = xM || isX(m)
     const xp = xm || isX(p)
@@ -8683,6 +10873,22 @@ const { safeRe: re, t } = __nccwpck_require__(5471)
 
 const parseOptions = __nccwpck_require__(356)
 const { compareIdentifiers } = __nccwpck_require__(3348)
+
+const isPrereleaseIdentifier = (prerelease, identifier) => {
+  const identifiers = identifier.split('.')
+  if (identifiers.length > prerelease.length) {
+    return false
+  }
+
+  for (let i = 0; i < identifiers.length; i++) {
+    if (compareIdentifiers(prerelease[i], identifiers[i]) !== 0) {
+      return false
+    }
+  }
+
+  return true
+}
+
 class SemVer {
   constructor (version, options) {
     options = parseOptions(options)
@@ -8986,8 +11192,9 @@ class SemVer {
           if (identifierBase === false) {
             prerelease = [identifier]
           }
-          if (compareIdentifiers(this.prerelease[0], identifier) === 0) {
-            if (isNaN(this.prerelease[1])) {
+          if (isPrereleaseIdentifier(this.prerelease, identifier)) {
+            const prereleaseBase = this.prerelease[identifier.split('.').length]
+            if (isNaN(prereleaseBase)) {
               this.prerelease = prerelease
             }
           } else {
@@ -9497,6 +11704,61 @@ module.exports = sort
 
 /***/ }),
 
+/***/ 6114:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+
+
+const parse = __nccwpck_require__(6353)
+const constants = __nccwpck_require__(5101)
+const SemVer = __nccwpck_require__(7163)
+
+const truncate = (version, truncation, options) => {
+  if (!constants.RELEASE_TYPES.includes(truncation)) {
+    return null
+  }
+
+  const clonedVersion = cloneInputVersion(version, options)
+  return clonedVersion && doTruncation(clonedVersion, truncation)
+}
+
+const cloneInputVersion = (version, options) => {
+  const versionStringToParse = (
+    version instanceof SemVer ? version.version : version
+  )
+
+  return parse(versionStringToParse, options)
+}
+
+const doTruncation = (version, truncation) => {
+  if (isPrerelease(truncation)) {
+    return version.version
+  }
+
+  version.prerelease = []
+
+  switch (truncation) {
+    case 'major':
+      version.minor = 0
+      version.patch = 0
+      break
+    case 'minor':
+      version.patch = 0
+      break
+  }
+
+  return version.format()
+}
+
+const isPrerelease = (type) => {
+  return type.startsWith('pre')
+}
+
+module.exports = truncate
+
+
+/***/ }),
+
 /***/ 8780:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -9545,6 +11807,7 @@ const gte = __nccwpck_require__(1236)
 const lte = __nccwpck_require__(6717)
 const cmp = __nccwpck_require__(8646)
 const coerce = __nccwpck_require__(5385)
+const truncate = __nccwpck_require__(6114)
 const Comparator = __nccwpck_require__(9379)
 const Range = __nccwpck_require__(6782)
 const satisfies = __nccwpck_require__(8011)
@@ -9583,6 +11846,7 @@ module.exports = {
   lte,
   cmp,
   coerce,
+  truncate,
   Comparator,
   Range,
   satisfies,
@@ -9922,7 +12186,7 @@ createToken('LOOSE', `^${src[t.LOOSEPLAIN]}$`)
 createToken('GTLT', '((?:<|>)?=?)')
 
 // Something like "2.*" or "1.2.x".
-// Note that "x.x" is a valid xRange identifer, meaning "any version"
+// Note that "x.x" is a valid xRange identifier, meaning "any version"
 // Only the first item is strictly required.
 createToken('XRANGEIDENTIFIERLOOSE', `${src[t.NUMERICIDENTIFIERLOOSE]}|x|X|\\*`)
 createToken('XRANGEIDENTIFIER', `${src[t.NUMERICIDENTIFIER]}|x|X|\\*`)
@@ -10514,7 +12778,7 @@ const simpleSubset = (sub, dom, options) => {
         if (higher === c && higher !== gt) {
           return false
         }
-      } else if (gt.operator === '>=' && !satisfies(gt.semver, String(c), options)) {
+      } else if (gt.operator === '>=' && !c.test(gt.semver)) {
         return false
       }
     }
@@ -10532,7 +12796,7 @@ const simpleSubset = (sub, dom, options) => {
         if (lower === c && lower !== lt) {
           return false
         }
-      } else if (lt.operator === '<=' && !satisfies(lt.semver, String(c), options)) {
+      } else if (lt.operator === '<=' && !c.test(lt.semver)) {
         return false
       }
     }
@@ -38639,6 +40903,13 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
 
 /***/ }),
 
+/***/ 2203:
+/***/ ((module) => {
+
+module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("stream");
+
+/***/ }),
+
 /***/ 3193:
 /***/ ((module) => {
 
@@ -38731,7 +41002,7 @@ module.exports = { version: packageJson.version }
 /***/ 4012:
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"name":"@actions/cache","version":"6.0.0","description":"Actions cache lib","keywords":["github","actions","cache"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/cache","license":"MIT","type":"module","main":"lib/cache.js","types":"lib/cache.d.ts","exports":{".":{"types":"./lib/cache.d.ts","import":"./lib/cache.js"}},"directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/cache"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"echo \\"Error: run tests from root\\" && exit 1","tsc":"tsc && cp src/internal/shared/package-version.cjs lib/internal/shared/"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^3.0.0","@actions/exec":"^3.0.0","@actions/glob":"^0.6.1","@actions/http-client":"^4.0.0","@actions/io":"^3.0.0","@azure/core-rest-pipeline":"^1.22.0","@azure/storage-blob":"^12.30.0","@protobuf-ts/runtime-rpc":"^2.11.1","semver":"^7.7.3"},"devDependencies":{"@protobuf-ts/plugin":"^2.9.4","@types/node":"^25.1.0","@types/semver":"^7.7.1","typescript":"^5.2.2"},"overrides":{"uri-js":"npm:uri-js-replace@^1.0.1","node-fetch":"^3.3.2"}}');
+module.exports = /*#__PURE__*/JSON.parse('{"name":"@actions/cache","version":"6.1.0","description":"Actions cache lib","keywords":["github","actions","cache"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/cache","license":"MIT","type":"module","main":"lib/cache.js","types":"lib/cache.d.ts","exports":{".":{"types":"./lib/cache.d.ts","import":"./lib/cache.js"}},"directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/cache"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"echo \\"Error: run tests from root\\" && exit 1","tsc":"tsc && cp src/internal/shared/package-version.cjs lib/internal/shared/"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^3.0.1","@actions/exec":"^3.0.0","@actions/glob":"^0.6.1","@actions/http-client":"^4.0.1","@actions/io":"^3.0.2","@azure/core-rest-pipeline":"^1.23.0","@azure/storage-blob":"^12.31.0","@protobuf-ts/runtime-rpc":"^2.11.1","semver":"^7.7.4"},"devDependencies":{"@protobuf-ts/plugin":"^2.11.1","@types/node":"^25.6.0","@types/semver":"^7.7.1","typescript":"^5.9.3"},"overrides":{"uri-js":"npm:uri-js-replace@^1.0.1","node-fetch":"^3.3.2"}}');
 
 /***/ })
 
@@ -41983,7 +44254,7 @@ function getIDToken(aud) {
  */
 
 //# sourceMappingURL=core.js.map
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-glob-options-helper.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-glob-options-helper.js
 
 /**
  * Returns a copy with defaults filled in.
@@ -42021,7 +44292,7 @@ function getOptions(copy) {
     return result;
 }
 //# sourceMappingURL=internal-glob-options-helper.js.map
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-path-helper.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-path-helper.js
 
 
 const internal_path_helper_IS_WINDOWS = process.platform === 'win32';
@@ -42189,7 +44460,7 @@ function safeTrimTrailingSeparator(p) {
     return p.substr(0, p.length - 1);
 }
 //# sourceMappingURL=internal-path-helper.js.map
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-match-kind.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-match-kind.js
 /**
  * Indicates whether a pattern matches a path
  */
@@ -42205,7 +44476,7 @@ var MatchKind;
     MatchKind[MatchKind["All"] = 3] = "All";
 })(MatchKind || (MatchKind = {}));
 //# sourceMappingURL=internal-match-kind.js.map
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-pattern-helper.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-pattern-helper.js
 
 
 const internal_pattern_helper_IS_WINDOWS = process.platform === 'win32';
@@ -42277,7 +44548,7 @@ function internal_pattern_helper_partialMatch(patterns, itemPath) {
 //# sourceMappingURL=internal-pattern-helper.js.map
 // EXTERNAL MODULE: ./node_modules/minimatch/minimatch.js
 var minimatch = __nccwpck_require__(3772);
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-path.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-path.js
 
 
 
@@ -42365,7 +44636,7 @@ class Path {
     }
 }
 //# sourceMappingURL=internal-path.js.map
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-pattern.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-pattern.js
 
 
 
@@ -42595,7 +44866,7 @@ class Pattern {
     }
 }
 //# sourceMappingURL=internal-pattern.js.map
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-search-state.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-search-state.js
 class SearchState {
     constructor(path, level) {
         this.path = path;
@@ -42603,7 +44874,7 @@ class SearchState {
     }
 }
 //# sourceMappingURL=internal-search-state.js.map
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-globber.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-globber.js
 var internal_globber_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -42823,11 +45094,11 @@ class DefaultGlobber {
     }
 }
 //# sourceMappingURL=internal-globber.js.map
-;// CONCATENATED MODULE: external "stream"
-const external_stream_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("stream");
+// EXTERNAL MODULE: external "stream"
+var external_stream_ = __nccwpck_require__(2203);
 // EXTERNAL MODULE: external "util"
 var external_util_ = __nccwpck_require__(9023);
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/internal-hash-files.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/internal-hash-files.js
 var internal_hash_files_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -42904,7 +45175,7 @@ function hashFiles(globber_1, currentWorkspace_1) {
     });
 }
 //# sourceMappingURL=internal-hash-files.js.map
-;// CONCATENATED MODULE: ./node_modules/@actions/glob/lib/glob.js
+;// CONCATENATED MODULE: ./node_modules/@actions/cache/node_modules/@actions/glob/lib/glob.js
 var glob_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -42947,7 +45218,7 @@ function glob_hashFiles(patterns_1) {
 }
 //# sourceMappingURL=glob.js.map
 // EXTERNAL MODULE: ./node_modules/semver/index.js
-var semver = __nccwpck_require__(2088);
+var node_modules_semver = __nccwpck_require__(2088);
 ;// CONCATENATED MODULE: ./node_modules/@actions/cache/lib/internal/constants.js
 var CacheFilename;
 (function (CacheFilename) {
@@ -43109,7 +45380,7 @@ function getVersion(app_1) {
 function getCompressionMethod() {
     return cacheUtils_awaiter(this, void 0, void 0, function* () {
         const versionOutput = yield getVersion('zstd', ['--quiet']);
-        const version = semver.clean(versionOutput);
+        const version = node_modules_semver.clean(versionOutput);
         core_debug(`zstd version: ${version}`);
         if (versionOutput === '') {
             return CompressionMethod.Gzip;
@@ -45584,7 +47855,7 @@ function makeAsyncIterable(webStream) {
 function ensureNodeStream(stream) {
     if (stream instanceof ReadableStream) {
         makeAsyncIterable(stream);
-        return external_stream_namespaceObject.Readable.fromWeb(stream);
+        return external_stream_.Readable.fromWeb(stream);
     }
     else {
         return stream;
@@ -45592,7 +47863,7 @@ function ensureNodeStream(stream) {
 }
 function toStream(source) {
     if (source instanceof Uint8Array) {
-        return external_stream_namespaceObject.Readable.from(Buffer.from(source));
+        return external_stream_.Readable.from(Buffer.from(source));
     }
     else if (typeGuards_isBlob(source)) {
         return ensureNodeStream(source.stream());
@@ -45613,7 +47884,7 @@ function toStream(source) {
 async function concat(sources) {
     return function () {
         const streams = sources.map((x) => (typeof x === "function" ? x() : x)).map(toStream);
-        return external_stream_namespaceObject.Readable.from((async function* () {
+        return external_stream_.Readable.from((async function* () {
             for (const stream of streams) {
                 for await (const chunk of stream) {
                     yield chunk;
@@ -83913,7 +86184,7 @@ NetworkError.isNetworkErrorCode = (code) => {
 };
 class UsageError extends Error {
     constructor() {
-        const message = `Cache storage quota has been hit. Unable to upload any new cache entries. Usage is recalculated every 6-12 hours.\nMore info on storage limits: https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#calculating-minute-and-storage-spending`;
+        const message = `Cache storage quota has been hit. Unable to upload any new cache entries.\nMore info on storage limits: https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#calculating-minute-and-storage-spending`;
         super(message);
         this.name = 'UsageError';
     }
@@ -85993,6 +88264,35 @@ class ReserveCacheError extends Error {
         Object.setPrototypeOf(this, ReserveCacheError.prototype);
     }
 }
+/**
+ * Stable prefix the receiver writes into the cache reservation response when
+ * the issuer downgraded the cache token to read-only (for example, because
+ * the run was triggered by an untrusted event). saveCacheV1 / saveCacheV2
+ * dispatch on this prefix to re-classify the failure as a
+ * CacheWriteDeniedError so consumers (and the outer catch arm) can
+ * distinguish a policy denial from other reservation failures.
+ */
+const CACHE_WRITE_DENIED_PREFIX = 'cache write denied:';
+/**
+ * Raised when the cache backend refuses to reserve a writable cache entry
+ * because the JWT issued for this run was scoped read-only (for example, the
+ * run was triggered by an event the repository administrator classified as
+ * untrusted). The receiver-supplied detail message always begins with
+ * `cache write denied:` (the full error message includes additional context
+ * like the cache key).
+ *
+ * Extends ReserveCacheError for source-compatibility: existing
+ * `instanceof ReserveCacheError` checks and `typedError.name ===
+ * ReserveCacheError.name` paths keep working, while consumers that want to
+ * distinguish the policy case can match on this subclass.
+ */
+class CacheWriteDeniedError extends ReserveCacheError {
+    constructor(message) {
+        super(message);
+        this.name = 'CacheWriteDeniedError';
+        Object.setPrototypeOf(this, CacheWriteDeniedError.prototype);
+    }
+}
 class FinalizeCacheError extends Error {
     constructor(message) {
         super(message);
@@ -86265,7 +88565,7 @@ function cache_saveCache(paths_1, key_1, options_1) {
  */
 function saveCacheV1(paths_1, key_1, options_1) {
     return cache_awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         const compressionMethod = yield getCompressionMethod();
         let cacheId = -1;
         const cachePaths = yield resolvePaths(paths);
@@ -86302,7 +88602,17 @@ function saveCacheV1(paths_1, key_1, options_1) {
                 throw new Error((_d = (_c = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _c === void 0 ? void 0 : _c.message) !== null && _d !== void 0 ? _d : `Cache size of ~${Math.round(archiveFileSize / (1024 * 1024))} MB (${archiveFileSize} B) is over the data cap limit, not saving cache.`);
             }
             else {
-                throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache. More details: ${(_e = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _e === void 0 ? void 0 : _e.message}`);
+                // Inspect the receiver's error message before deciding which error to
+                // throw. A message starting with the stable `cache write denied:`
+                // prefix indicates the issuer downgraded the token to read-only
+                // (policy denial), not a contention case, so we surface it as a
+                // CacheWriteDeniedError which the outer catch arm logs at warning
+                // level.
+                const detailMessage = (_e = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _e === void 0 ? void 0 : _e.message;
+                if (detailMessage === null || detailMessage === void 0 ? void 0 : detailMessage.startsWith(CACHE_WRITE_DENIED_PREFIX)) {
+                    throw new CacheWriteDeniedError(`Unable to reserve cache with key ${key}. More details: ${detailMessage}`);
+                }
+                throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache. More details: ${(_f = reserveCacheResponse === null || reserveCacheResponse === void 0 ? void 0 : reserveCacheResponse.error) === null || _f === void 0 ? void 0 : _f.message}`);
             }
             core_debug(`Saving Cache (ID: ${cacheId})`);
             yield saveCache(cacheId, archivePath, '', options);
@@ -86311,6 +88621,12 @@ function saveCacheV1(paths_1, key_1, options_1) {
             const typedError = error;
             if (typedError.name === ValidationError.name) {
                 throw error;
+            }
+            else if (typedError.name === CacheWriteDeniedError.name) {
+                // Cache write was denied by policy (read-only token). Surface to the
+                // customer at warning level so it is visible in the workflow log
+                // without failing the run.
+                warning(`Failed to save: ${typedError.message}`);
             }
             else if (typedError.name === ReserveCacheError.name) {
                 info(`Failed to save: ${typedError.message}`);
@@ -86350,6 +88666,7 @@ function saveCacheV1(paths_1, key_1, options_1) {
  */
 function saveCacheV2(paths_1, key_1, options_1) {
     return cache_awaiter(this, arguments, void 0, function* (paths, key, options, enableCrossOsArchive = false) {
+        var _a;
         // Override UploadOptions to force the use of Azure
         // ...options goes first because we want to override the default values
         // set in UploadOptions with these specific figures
@@ -86385,7 +88702,11 @@ function saveCacheV2(paths_1, key_1, options_1) {
             try {
                 const response = yield twirpClient.CreateCacheEntry(request);
                 if (!response.ok) {
-                    if (response.message) {
+                    // Skip the redundant inner warning when the receiver signalled a
+                    // policy denial: the outer catch arm below will log a single
+                    // customer-facing warning.
+                    if (response.message &&
+                        !response.message.startsWith(CACHE_WRITE_DENIED_PREFIX)) {
                         warning(`Cache reservation failed: ${response.message}`);
                     }
                     throw new Error(response.message || 'Response was not ok');
@@ -86394,6 +88715,10 @@ function saveCacheV2(paths_1, key_1, options_1) {
             }
             catch (error) {
                 core_debug(`Failed to reserve cache: ${error}`);
+                const errorMessage = (_a = error === null || error === void 0 ? void 0 : error.message) !== null && _a !== void 0 ? _a : '';
+                if (errorMessage.startsWith(CACHE_WRITE_DENIED_PREFIX)) {
+                    throw new CacheWriteDeniedError(`Unable to reserve cache with key ${key}. More details: ${errorMessage}`);
+                }
                 throw new ReserveCacheError(`Unable to reserve cache with key ${key}, another job may be creating this cache.`);
             }
             core_debug(`Attempting to upload cache located at: ${archivePath}`);
@@ -86417,6 +88742,12 @@ function saveCacheV2(paths_1, key_1, options_1) {
             const typedError = error;
             if (typedError.name === ValidationError.name) {
                 throw error;
+            }
+            else if (typedError.name === CacheWriteDeniedError.name) {
+                // Cache write was denied by policy (read-only token). Surface to the
+                // customer at warning level so it is visible in the workflow log
+                // without failing the run.
+                warning(`Failed to save: ${typedError.message}`);
             }
             else if (typedError.name === ReserveCacheError.name) {
                 info(`Failed to save: ${typedError.message}`);
@@ -86449,7 +88780,365 @@ function saveCacheV2(paths_1, key_1, options_1) {
     });
 }
 //# sourceMappingURL=cache.js.map
+// EXTERNAL MODULE: ./node_modules/@iarna/toml/toml.js
+var toml_toml = __nccwpck_require__(4572);
+;// CONCATENATED MODULE: ./src/utils.ts
+/* eslint no-unsafe-finally: "off" */
+
+
+
+
+
+
+
+const utils_IS_WINDOWS = process.platform === 'win32';
+const utils_IS_LINUX = process.platform === 'linux';
+const IS_MAC = process.platform === 'darwin';
+const WINDOWS_ARCHS = (/* unused pure expression or super */ null && (['x86', 'x64']));
+const WINDOWS_PLATFORMS = (/* unused pure expression or super */ null && (['win32', 'win64']));
+const PYPY_VERSION_FILE = 'PYPY_VERSION';
+/** create Symlinks for downloaded PyPy
+ *  It should be executed only for downloaded versions in runtime, because
+ *  toolcache versions have this setup.
+ */
+function createSymlinkInFolder(folderPath, sourceName, targetName, setExecutable = false) {
+    const sourcePath = path.join(folderPath, sourceName);
+    const targetPath = path.join(folderPath, targetName);
+    if (fs.existsSync(targetPath)) {
+        return;
+    }
+    fs.symlinkSync(sourcePath, targetPath);
+    if (!utils_IS_WINDOWS && setExecutable) {
+        fs.chmodSync(targetPath, '755');
+    }
+}
+function validateVersion(version) {
+    return isNightlyKeyword(version) || Boolean(semver.validRange(version));
+}
+function isNightlyKeyword(pypyVersion) {
+    return pypyVersion === 'nightly';
+}
+function getPyPyVersionFromPath(installDir) {
+    return path.basename(path.dirname(installDir));
+}
+/**
+ * In tool-cache, we put PyPy to '<toolcache_root>/PyPy/<python_version>/x64'
+ * There is no easy way to determine what PyPy version is located in specific folder
+ * 'pypy --version' is not reliable enough since it is not set properly for preview versions
+ * "7.3.3rc1" is marked as '7.3.3' in 'pypy --version'
+ * so we put PYPY_VERSION file to PyPy directory when install it to VM and read it when we need to know version
+ * PYPY_VERSION contains exact version from 'versions.json'
+ */
+function readExactPyPyVersionFile(installDir) {
+    let pypyVersion = '';
+    const fileVersion = path.join(installDir, PYPY_VERSION_FILE);
+    if (fs.existsSync(fileVersion)) {
+        pypyVersion = fs.readFileSync(fileVersion).toString().trim();
+    }
+    return pypyVersion;
+}
+function writeExactPyPyVersionFile(installDir, resolvedPyPyVersion) {
+    const pypyFilePath = path.join(installDir, PYPY_VERSION_FILE);
+    fs.writeFileSync(pypyFilePath, resolvedPyPyVersion);
+}
+/**
+ * Python version should be specified explicitly like "x.y" (3.10, 3.11, etc)
+ * "3.x" or "3" are not supported
+ * because it could cause ambiguity when both PyPy version and Python version are not precise
+ */
+function validatePythonVersionFormatForPyPy(version) {
+    const re = /^\d+\.\d+$/;
+    return re.test(version);
+}
+function utils_isGhes() {
+    const ghUrl = new URL(process.env['GITHUB_SERVER_URL'] || 'https://github.com');
+    const hostname = ghUrl.hostname.trimEnd().toUpperCase();
+    const isGitHubHost = hostname === 'GITHUB.COM';
+    const isGitHubEnterpriseCloudHost = hostname.endsWith('.GHE.COM');
+    const isLocalHost = hostname.endsWith('.LOCALHOST');
+    return !isGitHubHost && !isGitHubEnterpriseCloudHost && !isLocalHost;
+}
+function isCacheFeatureAvailable() {
+    if (cache.isFeatureAvailable()) {
+        return true;
+    }
+    if (utils_isGhes()) {
+        core.warning('Caching is only supported on GHES version >= 3.5. If you are on a version >= 3.5, please check with your GHES admin if the Actions cache service is enabled or not.');
+        return false;
+    }
+    core.warning('The runner was not able to contact the cache service. Caching will be skipped');
+    return false;
+}
+function logWarning(message) {
+    const warningPrefix = '[warning]';
+    core.info(`${warningPrefix}${message}`);
+}
+async function utils_getWindowsInfo() {
+    const { stdout } = await exec.getExecOutput('powershell -command "(Get-CimInstance -ClassName Win32_OperatingSystem).Caption"', undefined, {
+        silent: true
+    });
+    const windowsVersion = stdout.trim().split(' ')[3];
+    return { osName: 'Windows', osVersion: windowsVersion };
+}
+async function getMacOSInfo() {
+    const { stdout } = await exec.getExecOutput('sw_vers', ['-productVersion'], {
+        silent: true
+    });
+    const macOSVersion = stdout.trim();
+    return { osName: 'macOS', osVersion: macOSVersion };
+}
+async function utils_getLinuxInfo() {
+    try {
+        const { stdout } = await exec.getExecOutput('lsb_release', ['-i', '-r', '-s'], {
+            silent: true
+        });
+        const [osName, osVersion] = stdout.trim().split('\n');
+        core.debug(`OS Name: ${osName}, Version: ${osVersion}`);
+        return { osName, osVersion };
+    }
+    catch (err) {
+        core.debug(`lsb_release failed (${err.message}). Falling back to /etc/os-release.`);
+        const osReleaseContent = fs.readFileSync('/etc/os-release', 'utf8');
+        const osInfo = {};
+        osReleaseContent.split('\n').forEach(line => {
+            const [key, value] = line.split('=');
+            if (key && value) {
+                osInfo[key.trim()] = value.trim().replace(/"/g, '');
+            }
+        });
+        const osName = osInfo['ID'] || 'Linux';
+        const osVersion = osInfo['VERSION_ID'] || '';
+        core.debug(`OS Name: ${osName}, Version: ${osVersion}`);
+        return { osName, osVersion };
+    }
+}
+async function utils_getOSInfo() {
+    let osInfo;
+    try {
+        if (utils_IS_WINDOWS) {
+            osInfo = await utils_getWindowsInfo();
+        }
+        else if (utils_IS_LINUX) {
+            osInfo = await utils_getLinuxInfo();
+        }
+        else if (IS_MAC) {
+            osInfo = await getMacOSInfo();
+        }
+    }
+    catch (err) {
+        const error = err;
+        core.debug(error.message);
+    }
+    finally {
+        return osInfo;
+    }
+}
+/**
+ * Extract a value from an object by following the keys path provided.
+ * If the value is present, it is returned. Otherwise undefined is returned.
+ */
+function extractValue(obj, keys) {
+    if (keys.length > 0) {
+        const value = obj[keys[0]];
+        if (keys.length > 1 && value !== undefined) {
+            return extractValue(value, keys.slice(1));
+        }
+        else {
+            return value;
+        }
+    }
+    else {
+        return;
+    }
+}
+/**
+ * Python version extracted from the TOML file.
+ * If the `project` key is present at the root level, the version is assumed to
+ * be specified according to PEP 621 in `project.requires-python`.
+ * Otherwise, if the `tool` key is present at the root level, the version is
+ * assumed to be specified using poetry under `tool.poetry.dependencies.python`.
+ * If none is present, returns an empty list.
+ */
+function getVersionInputFromTomlFile(versionFile) {
+    core.debug(`Trying to resolve version from ${versionFile}`);
+    let pyprojectFile = fs.readFileSync(versionFile, 'utf8');
+    // Normalize the line endings in the pyprojectFile
+    pyprojectFile = pyprojectFile.replace(/\r\n/g, '\n');
+    const pyprojectConfig = toml.parse(pyprojectFile);
+    let keys = [];
+    if ('project' in pyprojectConfig) {
+        // standard project metadata (PEP 621)
+        keys = ['project', 'requires-python'];
+    }
+    else {
+        // python poetry
+        keys = ['tool', 'poetry', 'dependencies', 'python'];
+    }
+    const versions = [];
+    const version = extractValue(pyprojectConfig, keys);
+    if (version !== undefined) {
+        versions.push(version);
+    }
+    core.info(`Extracted ${versions} from ${versionFile}`);
+    const rawVersions = Array.from(versions, version => version.split(',').join(' '));
+    const validatedVersions = rawVersions
+        .map(item => semver.validRange(item, true))
+        .filter((versionRange, index) => {
+        if (!versionRange) {
+            core.debug(`The version ${rawVersions[index]} is not valid SemVer range`);
+        }
+        return !!versionRange;
+    });
+    return validatedVersions;
+}
+/**
+ * Python versions extracted from a plain text file.
+ * - Resolves multiple versions from multiple lines.
+ * - Handles pyenv-virtualenv pointers (e.g. `3.10/envs/virtualenv`).
+ * - Ignores empty lines and lines starting with `#`
+ * - Trims whitespace.
+ */
+function getVersionsInputFromPlainFile(versionFile) {
+    core.debug(`Trying to resolve versions from ${versionFile}`);
+    const content = fs.readFileSync(versionFile, 'utf8').trim();
+    const lines = content.split(/\r\n|\r|\n/);
+    const versions = lines
+        .map(line => {
+        if (line.startsWith('#') || line.trim() === '') {
+            return undefined;
+        }
+        let version = line.trim();
+        version = version.split('/')[0];
+        return version;
+    })
+        .filter(version => version !== undefined);
+    core.info(`Resolved ${versionFile} as ${versions.join(', ')}`);
+    return versions;
+}
+/**
+ * Python version extracted from a .tool-versions file.
+ */
+function getVersionInputFromToolVersions(versionFile) {
+    if (!fs.existsSync(versionFile)) {
+        core.warning(`File ${versionFile} does not exist.`);
+        return [];
+    }
+    try {
+        const fileContents = fs.readFileSync(versionFile, 'utf8');
+        const lines = fileContents.split('\n');
+        for (const line of lines) {
+            // Skip commented lines
+            if (line.trim().startsWith('#')) {
+                continue;
+            }
+            const match = line.match(/^\s*python\s*v?\s*(?<version>[^\s]+)\s*$/);
+            if (match) {
+                return [match.groups?.version.trim() || ''];
+            }
+        }
+        core.warning(`No Python version found in ${versionFile}`);
+        return [];
+    }
+    catch (error) {
+        core.error(`Error reading ${versionFile}: ${error.message}`);
+        return [];
+    }
+}
+/**
+ * Python version extracted from the Pipfile file.
+ */
+function getVersionInputFromPipfileFile(versionFile) {
+    core.debug(`Trying to resolve version from ${versionFile}`);
+    if (!fs.existsSync(versionFile)) {
+        core.warning(`File ${versionFile} does not exist.`);
+        return [];
+    }
+    let pipfileFile = fs.readFileSync(versionFile, 'utf8');
+    // Normalize the line endings in the pipfileFile
+    pipfileFile = pipfileFile.replace(/\r\n/g, '\n');
+    const pipfileConfig = toml.parse(pipfileFile);
+    const keys = ['requires'];
+    if (!('requires' in pipfileConfig)) {
+        core.warning(`No Python version found in ${versionFile}`);
+        return [];
+    }
+    if ('python_full_version' in pipfileConfig['requires']) {
+        // specifies a full python version
+        keys.push('python_full_version');
+    }
+    else {
+        keys.push('python_version');
+    }
+    const versions = [];
+    const version = extractValue(pipfileConfig, keys);
+    if (version !== undefined) {
+        versions.push(version);
+    }
+    core.info(`Extracted ${versions} from ${versionFile}`);
+    return versions;
+}
+/**
+ * Python version extracted from a plain, .tool-versions, Pipfile or TOML file.
+ */
+function getVersionInputFromFile(versionFile) {
+    if (versionFile.endsWith('.toml')) {
+        return getVersionInputFromTomlFile(versionFile);
+    }
+    else if (versionFile.match('.tool-versions')) {
+        return getVersionInputFromToolVersions(versionFile);
+    }
+    else if (versionFile.match('Pipfile')) {
+        return getVersionInputFromPipfileFile(versionFile);
+    }
+    else {
+        return getVersionsInputFromPlainFile(versionFile);
+    }
+}
+/**
+ * Get the directory containing interpreter binary from installation directory of PyPy
+ *  - On Linux and macOS, the Python interpreter is in 'bin'.
+ *  - On Windows, it is in the installation root.
+ */
+function getBinaryDirectory(installDir) {
+    return utils_IS_WINDOWS ? installDir : path.join(installDir, 'bin');
+}
+/**
+ * Extract next page URL from a HTTP response "link" header. Such headers are used in GitHub APIs.
+ */
+function getNextPageUrl(response) {
+    const responseHeaders = response.headers;
+    const linkHeader = responseHeaders.link;
+    if (typeof linkHeader === 'string') {
+        for (const link of linkHeader.split(/\s*,\s*/)) {
+            const match = link.match(/<([^>]+)>(.*)/);
+            if (match) {
+                const url = match[1];
+                for (const param of match[2].split(/\s*;\s*/)) {
+                    if (param.match(/rel="?next"?/)) {
+                        return url;
+                    }
+                }
+            }
+        }
+    }
+    return null;
+}
+/**
+ * Add temporary fix for Windows
+ * On Windows, it is necessary to retain the .zip extension for proper extraction.
+ * because the tc.extractZip() failure due to tc.downloadTool() not adding .zip extension.
+ * Related issue: https://github.com/actions/toolkit/issues/1179
+ * Related issue: https://github.com/actions/setup-python/issues/819
+ */
+function getDownloadFileName(downloadUrl) {
+    const tempDir = process.env.RUNNER_TEMP || '.';
+    return utils_IS_WINDOWS
+        ? path.join(tempDir, path.basename(downloadUrl))
+        : undefined;
+}
+
 ;// CONCATENATED MODULE: ./src/cache-distributions/cache-distributor.ts
+
 
 
 
@@ -86468,6 +89157,28 @@ class CacheDistributor {
         this.cacheDependencyPath = cacheDependencyPath;
     }
     async handleLoadedCache() { }
+    /**
+     * Builds the Linux distro portion of a cache key (e.g. `-26.04-Ubuntu`, `-9-rhel`).
+     * RHEL is keyed by major version since it ships one ABI-stable artifact per major.
+     */
+    async getLinuxInfoKeySegment() {
+        if (!IS_LINUX) {
+            return '';
+        }
+        const osInfo = await getOSInfo();
+        if (!osInfo) {
+            return '';
+        }
+        // lsb_release reports RHEL as "RedHatEnterpriseLinux" while /etc/os-release
+        // reports it as "rhel"; normalize both to "rhel" so the key is consistent.
+        const normalizedName = osInfo.osName.toLowerCase();
+        const isRhel = normalizedName === 'rhel' || normalizedName.includes('redhat');
+        const osName = isRhel ? 'rhel' : osInfo.osName;
+        const osVersion = isRhel
+            ? osInfo.osVersion.split('.')[0]
+            : osInfo.osVersion;
+        return `-${osVersion}-${osName}`;
+    }
     async restoreCache() {
         const { primaryKey, restoreKey } = await this.computeKeys();
         if (primaryKey.endsWith('-')) {
