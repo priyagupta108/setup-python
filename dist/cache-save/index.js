@@ -97528,7 +97528,11 @@ async function cache_save_saveCache(packageManager) {
         info(`[warning]${message}`);
         return;
     }
-    if (cacheId == -1) {
+    if (cacheId === -1) {
+        // saveCache returns -1 without throwing when the cache was not saved, e.g.
+        // a reserve collision or a read-only token (fork PR). @actions/cache has
+        // already logged the reason at the appropriate severity, so just trace it.
+        core_debug(`Cache was not saved for the key: ${primaryKey}`);
         return;
     }
     info(`Cache saved with the key: ${primaryKey}`);

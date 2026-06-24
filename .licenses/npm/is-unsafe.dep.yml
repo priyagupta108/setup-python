@@ -4,7 +4,7 @@ version: 1.0.1
 type: npm
 summary: Zero-dependency, DOM-free, pure predicate for detecting unsafe strings across
   HTML, XML, SVG, SQL, SHELL, and REGEX contexts
-homepage:
+homepage: 
 license: mit
 licenses:
 - sources: LICENSE
