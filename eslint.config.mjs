@@ -1,30 +1,31 @@
+// This is a reusable configuration file copied from https://github.com/actions/reusable-workflows/tree/main/reusable-configurations. Please don't make changes to this file as it's the subject of an automatic update.
+import js from '@eslint/js';
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
-import prettierConfig from 'eslint-config-prettier';
-import jestPlugin from 'eslint-plugin-jest';
+import jest from 'eslint-plugin-jest';
+import n from 'eslint-plugin-n';
+import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
   {
-    ignores: [
-      'node_modules/**',
-      'dist/**',
-      'lib/**',
-      'coverage/**',
-      '__mocks__/**'
-    ]
+    ignores: ['**/*', '!src/**', '!__tests__/**']
   },
-  prettierConfig,
+  js.configs.recommended,
   {
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
-      parserOptions: {
-        project: './tsconfig.eslint.json'
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.es2015
       }
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
-      jest: jestPlugin
+      n
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
@@ -39,7 +40,7 @@ export default [
         }
       ],
       'no-console': 'error',
-      'yoda': 'error',
+      yoda: 'error',
       'prefer-const': [
         'error',
         {
@@ -47,20 +48,25 @@ export default [
         }
       ],
       'no-control-regex': 'off',
-      'no-constant-condition': ['error', {checkLoops: false}]
+      'no-constant-condition': ['error', {checkLoops: false}],
+      'n/no-extraneous-import': 'error'
     }
   },
   {
     files: ['**/*{test,spec}.ts'],
-    plugins: {
-      jest: jestPlugin
+    plugins: {jest},
+    languageOptions: {
+      globals: {
+        ...globals.jest
+      }
     },
     rules: {
-      ...jestPlugin.configs['flat/recommended'].rules,
+      ...jest.configs['flat/recommended'].rules,
       '@typescript-eslint/no-unused-vars': 'off',
       'jest/no-standalone-expect': 'off',
       'jest/no-conditional-expect': 'off',
       'no-console': 'off'
     }
-  }
+  },
+  prettier
 ];
