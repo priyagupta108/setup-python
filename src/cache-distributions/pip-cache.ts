@@ -70,15 +70,22 @@ class PipCache extends CacheDistributor {
       allowFilesOutsideWorkspace = true;
     }
 
+    // Exclude pattern to test the new option.
+    // A path pattern (contains "/") is anchored to every root, so it excludes
+    // matching files both inside the workspace and outside it (e.g. under actionPath).
+    // Use a basename pattern like ['dev-requirements.txt'] to match anywhere by filename.
+    const exclude = ['**/dev-requirements.txt'];
+
     const hash =
       (await glob.hashFiles(this.cacheDependencyPath, workspace, {
         roots,
-        allowFilesOutsideWorkspace
-        // Optionally add exclude: ['*.log'] or from an input
+        allowFilesOutsideWorkspace,
+        exclude
       })) ||
       (await glob.hashFiles(this.cacheDependencyBackupPath, workspace, {
         roots,
-        allowFilesOutsideWorkspace
+        allowFilesOutsideWorkspace,
+        exclude
       }));
 
     let primaryKey = '';
