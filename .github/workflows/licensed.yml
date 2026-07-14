@@ -3,7 +3,7 @@ name: Licensed
 on:
   push:
     branches:
-      - update-licensed-tool
+      - test-update-licensed-tool
   pull_request:
     branches:
       - main
