@@ -3,7 +3,7 @@ name: Licensed
 on:
   push:
     branches:
-      - main
+      - update-licensed-tool
   pull_request:
     branches:
       - main
@@ -11,4 +11,4 @@ on:
 jobs:
   call-licensed:
     name: Licensed
-    uses: actions/reusable-workflows/.github/workflows/licensed.yml@main
+    uses: priyagupta108/reusable-workflows/.github/workflows/licensed.yml@update-licensed-tool
