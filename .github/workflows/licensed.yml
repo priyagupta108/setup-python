@@ -6,6 +6,7 @@ on:
       - test-update-licensed-tool
   pull_request:
     branches:
+    
       - main
 
 jobs:
